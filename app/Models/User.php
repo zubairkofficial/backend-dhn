@@ -27,6 +27,7 @@ class User extends Authenticatable
         'is_user_customer'
     ];
 
+    protected $with =['organization'];
     /**
      * The attributes that should be hidden for serialization.
      *
@@ -50,7 +51,7 @@ class User extends Authenticatable
 
     public function organization()
     {
-        return $this->hasOne(Organization::class, 'id', 'org_id');
+        return $this->hasOne(Organization::class, 'id', 'org_id')?->with('instructions');
     }
     public function services()
     {

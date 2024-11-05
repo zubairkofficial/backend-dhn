@@ -9,13 +9,8 @@ class CustomerAdmin extends Model
 {
     use HasFactory;
 
-    // Specify the table if it's not the plural form of the model name
-    protected $table = 'customer_admins';
-
-    // Define fillable fields
     protected $fillable = [
         'user_id',
-        // Add other fields if necessary
     ];
 
     /**

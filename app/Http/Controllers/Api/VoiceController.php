@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
-use App\Models\{Email, ApiKey, Organization, GeneratedNumber};
+use App\Models\{Email, Setting, Organization, GeneratedNumber};
 
 
 class VoiceController extends Controller
@@ -21,19 +21,13 @@ class VoiceController extends Controller
     public function transcribe(Request $request)
     {
 
-        $apiKey = env('CHAT_GPT_KEY');
-        $model = env('CHAT_GPT_MODEL');
-
-        $deepgramapi = ApiKey::where('name','Deepgram')->select('key')->first()->key;;
-
-        $user_id = Auth::user()->id;
-
+        $deepgramKey = Setting::where('name', 'DeepgramKey')->first()->value;;
         try {
             $audioFile = fopen($request->file('audio')->getPathName(), 'r');
             $client = new Client();
             $response = $client->request('POST', 'https://api.deepgram.com/v1/listen?model=whisper-small&detect_language=true', [
                 'headers' => [
-                    'Authorization' => 'Token ' . $deepgramapi,
+                    'Authorization' => 'Token ' . $deepgramKey,
                     'Content-Type' => 'audio/mp3',
                     'language' => 'de',
                     'numerals' => true,
@@ -58,208 +52,110 @@ class VoiceController extends Controller
 
     public function generateSummary(Request $request)
     {
+        // Fetch the transcription text from the request
         $transcriptionText = $request->input('recordedText');
-        $apiKey = ApiKey::where('name','OpenAI')->select('key')->first()->key;
-
-
-
-
-        $user_id = Auth::user()->id;
-        $customPrompt = Auth::user()->organization?->prompt;
-
-        $defaultPrompt = "
-        $transcriptionText
-
-        Das Format der Zusammenfassung sollte wie folgt aussehen:
-
-        Allgemein
-        [TEXT_HERE]
-        Vertriebsthemen
-        [TEXT_HERE]
-        Einkaufsthemen
-        [TEXT_HERE]
-        Aufgaben
-        [TEXT_HERE]
-        Eigenmarke
-        [TEXT_HERE]
-
-        Der Text lautet \"$transcriptionText\"
-        Bitte fassen Sie den Text in diesem Format zusammen und machen Sie die Überschriften fett.
-        ";
-
-        $summaryPrompt = $customPrompt ? "$customPrompt\n\n$transcriptionText" : $defaultPrompt;
-
-        Log::info('Using summary prompt: ' . $summaryPrompt);
-
+    
+        // Fetch OpenAI API key and model from settings
+        $apiKey = Setting::where('name', 'OpenAIKey')->value('value');
+        $apiModel = Setting::where('name', 'OpenAIModel')->value('value');
+    
+        // Define the prompt with required fields and structure
+        $prompt = Auth::user()?->organization?->prompt ?? Setting::where('name', 'voiceToolDefaultPrompt')->value('value');
+    
         $client = new \GuzzleHttp\Client();
-
-        // Method 1: Generating a summary
-        $summaryModel = 'gpt-3.5-turbo-instruct';
-
-        $summaryResponse = null;
-        $body = null;
-
+    
         try {
-            $response = $client->request('POST', 'https://api.openai.com/v1/completions', [
+            // Make the request to OpenAI API
+            $response = $client->post('https://api.openai.com/v1/chat/completions', [
                 'headers' => [
                     'Authorization' => 'Bearer ' . $apiKey,
                     'Content-Type' => 'application/json',
                 ],
                 'json' => [
-                    'model' => $summaryModel,
-                    'prompt' => $summaryPrompt,
-                    'temperature' => 0.7,
-                    'max_tokens' => 1000,
-                    'top_p' => 1.0,
-                    'frequency_penalty' => 0.0,
-                    'presence_penalty' => 0.0,
-                ],
-            ]);
-
-            $body = json_decode($response->getBody()->getContents(), true);
-            Log::info('OpenAI API Response: ' . json_encode($body));
-
-            $summaryResponse = $body['choices'][0]['text'] ?? 'Zusammenfassung konnte nicht generiert werden';
-        } catch (\Exception $e) {
-            Log::error("OpenAI GPT-3.5 Summary Request Failed: " . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'error' => " OpenAI API Request Failed. "
-            ], 500);
-        }
-
-        // Method 2: Generating structured JSON
-        $jsonModel = 'gpt-4o';
-        $jsonPrompt = " Wir haben eine deutsche Transkription aus einer aufgezeichneten Audiodatei, die wir zusammenfassen müssen.
-        Beispiel für eine Audio-Transkription
-        $transcriptionText.
-
-        Wir benötigen ein Format für die Zusammenfassung, das generiert wird.
-        Die Zusammenfassung muss im JSON-Format vorliegen.
-        {
-          'date': DATE_HERE,
-          'topic': TOPIC_HERE,
-          'shareholder': 'Number_here',
-          'participant': 'Teilnehmer hier , falls vorhanden',
-          'author': 'Autorenname hier',
-         'branch_manager' : ' Niederlassungsleiter name '
-          'general_information': 'Der vollständige Überblick/die Zusammenfassung im Detail für die Transkription',
-          'sales_topic': 'Die Vertriebsthemen hier definieren',
-          'tasks': 'Die Aufgaben hier hinzufügen',
-          'author_message': 'Nachricht vom Autor basierend auf der Transkription',
-          'summary': 'Alle Parameter einschließlich aller Details und deren Verknüpfung, um eine Zusammenfassung in Textform zu erstellen'
-        }
-
-        Beispiel für 'summary' (Dieses Beispiel dient nur zur Erläuterung, wie wir es benötigen)
-
-        Datum: 24-10-23
-        Thema: SPS Bauen + Modernisieren
-        Aktionär: 143922
-        Teilnehmer: Olaf Jordan, Niederlassungsleiter
-        Autor: Frank Große
-
-        Allgemein
-        Der Standort ist seit dem 1.1.2024 neu im SPS BuM. Herrn Jordan wurde das SPS und die Maßnahmen2024 vorgestellt. Insbesondere wurde auf die Kampagne zur Energetischen Sanierung eingegangen. Das Thema kommt sehr gut an. Problematisch wird die Umsetzung gesehen, weil Herr Jordan über 3 Mitarbeiter verfügt, die altersbedingt in naher Zukunft das Unternehmen verlassen werden und dann neben ihm nur ein weiterer Verkäufer zur Verfügung steht, welcher im Moment krank ist. Wichtig erachtet er, dass Kunden frühzeitig über die neuen Leistungen informiert werden.
-
-        Vertriebsthemen
-        Konzentration soll auf der Umsetzung der Kampagne KES gelegt werden.
-
-        Einkaufsthemen
-        nicht besprochen
-
-        Aufgaben
-        Umsetzung der digitalen Themen mit der Zentrale in Ebern absprechen. / KW 16 / Frank Große
-        Mitarbeiter für KES motivieren und zur Schulung anmelden. / KW 20 / Olaf Jordan
-
-        Eigenmarke
-        Nicht besprochen
-
-        Stellen Sie sicher, dass das Format korrekt ist und die Zusammenfassung gemäß den anderen Felddaten bereitgestellt wird und keine zusätzlichen Details enthält und im JSON-Format vorliegt";
-
-        $jsonResponse = null;
-        try {
-            $response = $client->post('https://api.openai.com/v1/chat/completions', [
-                'json' => [
-                    'model' => $jsonModel,
+                    'model' => $apiModel,
                     'messages' => [
-                        ['role' => 'system', 'content' => 'You are a helpful assistant that converts text to structured JSON.'],
-                        ['role' => 'user', 'content' => $jsonPrompt]
+                        ['role' => 'system', 'content' => 'You are a helpful assistant designed to output valid JSON.'],
+                        ['role' => 'user', 'content' => $prompt . "\n\n" . $transcriptionText]
                     ],
                     'temperature' => 0.5,
                     'max_tokens' => 1500,
-                    'top_p' => 1.0,
-                    'frequency_penalty' => 0.0,
-                    'presence_penalty' => 0.0,
-                ],
-                'headers' => [
-                    'Authorization' => 'Bearer ' . $apiKey,
-                    'Content-Type' => 'application/json',
-                ],
-                'timeout' => 120,
+                ]
             ]);
-
-            $body = json_decode($response->getBody()->getContents(), true);
-            $jsonResponse = $body['choices'][0]['message']['content'] ?? null;
-        } catch (\Exception $e) {
-            Log::error("OpenAI GPT-4 JSON Request Failed: " . $e->getMessage());
-        }
-
-        $numberResponse = $jsonResponse ? json_decode($jsonResponse, true) : null;
-
-        $thema = $numberResponse['topic'] ?? null;
-        $Niederlassungsleiter = $numberResponse['author'] ?? null;
-        $datum = $numberResponse['date'] ?? null;
-        $formattedDatum = $datum ? date('d-m-y', strtotime(str_replace('.', '-', $datum))) : null;
-        $number = $numberResponse['shareholder'] ?? null;
-        // $formattedNumber = $number ? str_replace('.', '', $number) : null;
-        $Teilnehmer = $numberResponse['participant'] ?? null;
-        // $BM = $numberResponse['branch_manager'] ?? null;
-        $totalTokens = $body['usage']['total_tokens'] ?? null;
-
-        $TeilnehmerString = is_array($Teilnehmer) ? implode(', ', $Teilnehmer) : $Teilnehmer;
-
-        $generatedSummary = GeneratedNumber::create([
-            // 'number' => $formattedNumber,
-            'Thema' => $thema,
-            'Datum' => $formattedDatum,
-            'Teilnehmer' => $TeilnehmerString,
-            // 'BM' => $BM,
-            'Niederlassungsleiter' => $Niederlassungsleiter,
-        ]);
-
-        if ($totalTokens !== null && $user_id !== null) {
-            try {
-                // DB::table('users')
-                //     ->where('id', $user_id)
-                //     ->increment('voice_tool', $totalTokens);
-
-                $pricePerToken = 0.03 / 1000;
-                $totalPrice = $totalTokens * $pricePerToken;
-                $totalPrice = round($totalPrice, 5);
-
-                Log::info('log', [$totalPrice]);
-
-                // Increment the total price for the user
-                // DB::table('users')
-                //     ->where('id', $user_id)
-                //     ->increment('voice_price', $totalPrice);
-
-            } catch (\Exception $e) {
-                Log::error("Updating total tokens failed: " . $e->getMessage());
+    
+            $responseData = json_decode($response->getBody()->getContents(), true);
+    
+            // Check if choices and necessary fields exist in the response
+            if (!isset($responseData['choices'][0]['message']['content'])) {
+                // Log::error("OpenAI API response is missing expected content", ['response' => $responseData]);
+                return response()->json([
+                    'status' => 500,
+                    'message' => 'OpenAI API response format was unexpected. Please try again.',
+                ]);
             }
+    
+            $jsonContent = $responseData['choices'][0]['message']['content'] ?? null;
+    
+            // Remove backticks and surrounding markdown indicators (```json ... ```)
+            $cleanedJsonContent = preg_replace('/^```json|```$/', '', $jsonContent);
+    
+            // Attempt to decode the cleaned JSON content
+            $jsonSummary = json_decode($cleanedJsonContent, true);
+    
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                // Log the error if JSON decoding fails
+                // Log::error("Failed to decode JSON content", ['jsonContent' => $cleanedJsonContent]);
+                return response()->json([
+                    'status' => 500,
+                    'message' => 'Failed to decode JSON response from OpenAI.',
+                ]);
+            }
+    
+            // Check for invalid transcription status code
+            if (isset($jsonSummary['status_code']) && $jsonSummary['status_code'] === '422') {
+                return response()->json([
+                    'status' => 422,
+                    'message' => $jsonSummary['message'] ?? 'Der Transkriptionstext ist nicht gültig. Versuchen Sie es erneut.'
+                ]);
+            }
+    
+            // Log parsed JSON content to inspect structure
+            // Log::info("Parsed JSON summary:", ['jsonSummary' => $jsonSummary]);
+    
+            // Extract summary details and store in the database
+            $thema = $jsonSummary['topic'] ?? null;
+            $branchManager = $jsonSummary['branch_manager'] ?? null;
+            $date = $jsonSummary['date'] ?? null;
+            $formattedDate = $date ? date('d-m-Y', strtotime(str_replace('.', '-', $date))) : null;
+            $participants = $jsonSummary['participants'] ?? null;
+    
+            $generatedSummary = GeneratedNumber::create([
+                'Thema' => $thema,
+                'Datum' => $formattedDate,
+                'Teilnehmer' => is_array($participants) ? implode(', ', $participants) : $participants,
+                'Niederlassungsleiter' => $branchManager,
+            ]);
+    
+            return response()->json([
+                'summary_id' => $generatedSummary->id,
+                'summary' => $jsonSummary['summary'],
+                'json_summary' => $jsonSummary,
+                'status' => 200,
+                'message' => 'Data successfully stored.',
+            ]);
+        } catch (\Exception $e) {
+            Log::error("Error generating summary: " . $e->getMessage());
+            return response()->json([
+                'status' => 500,
+                'message' => 'Error generating or storing summary: ' . $e->getMessage(),
+            ]);
         }
-
-        return response()->json([
-            'summary_id'=> $generatedSummary->id,
-            'summary' => $summaryResponse,
-            'json_summary' => $jsonResponse,
-        ]);
     }
+    
 
     public function sendEmail(Request $request)
     {
         $data = [
-            'email' => $request->input('email'),
+            'email' => Auth::user()->email,
             'transcriptionText' => $request->input('transcriptionText'),
             'listeningText' => $request->input('listeningText'),
             'summary' => $request->input('summary'),
@@ -271,11 +167,11 @@ class VoiceController extends Controller
 
         try {
 
-            $user = Auth::user();
-            if ($user && $user->send_email !== $data['email']) {
-                $user->send_email = $data['email'];
-                $user->save();
-            }
+            // $user = Auth::user();
+            // if ($user && $user->send_email !== $data['email']) {
+            //     $user->send_email = $data['email'];
+            //     $user->save();
+            // }
 
             Email::create([
                 'email' => $data['email'],
@@ -310,7 +206,7 @@ class VoiceController extends Controller
     {
         $data = [
             'title' => $request->input('title'),
-            'email' => $request->input('email'),
+            'email' => Auth::user()->email,
             'name' => $request->input('name'),
             'transcriptionText' => $request->input('transcriptionText'),
             'summary' => $request->input('summary'), // Add the summary to the data array
@@ -334,7 +230,7 @@ class VoiceController extends Controller
     public function getLatestNumber($summary_id)
     {
 
-        $latestData = GeneratedNumber::where('id',$summary_id)->first();
+        $latestData = GeneratedNumber::where('id', $summary_id)->first();
         return response()->json($latestData, 200);
     }
 }

@@ -1,4 +1,5 @@
 <?php
+
 use App\Http\Controllers\Api\FreeDataProcessController;
 use App\Http\Controllers\CustomerRequestController;
 use App\Http\Controllers\Api\AdminController;
@@ -9,8 +10,9 @@ use App\Http\Controllers\Api\TranslationController;
 use App\Http\Controllers\Api\FileController;
 use App\Http\Controllers\Api\ContractAutomationSolutionController;
 use App\Http\Controllers\Api\DataProcessController;
+use App\Http\Controllers\Api\GPTModelController;
+use App\Http\Controllers\Api\InstructionController;
 use App\Http\Controllers\Api\SettingController;
-use App\Http\Controllers\Api\ToolController;
 use App\Http\Controllers\CustomerUserController;
 use App\Http\Controllers\Api\VoiceController;
 use App\Http\Controllers\UserController;
@@ -25,7 +27,6 @@ Route::prefix('auth')->group(function () {
     Route::post('register-customer', [AuthController::class, 'registerCustomer']);
     Route::post('register-customer-admin', [AuthController::class, 'registerCustomerByAdmin']);
     Route::post('link-users', [AuthController::class, 'linkUsers']);
-
 });
 
 Route::middleware(['auth:sanctum'])->group(function () {
@@ -50,14 +51,6 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::get('/getUserData', [AuthController::class, 'getUserData']);
     Route::get('/getNonOrganizationalUsers', [AuthController::class, 'getNonOrganizationalUsers']);
     Route::get('dashboardInfo', [AdminController::class, 'dashboardInfo']);
-
-    //API SETTINGS ROUTES
-    Route::post('/add-model', [ApiKeyController::class, 'addModel']);
-    Route::post('/save-api-key', [ApiKeyController::class, 'store']);  // Existing route to save API key
-    Route::get('/api-key/{id}', [ApiKeyController::class, 'show']);
-    Route::get('/api-models', [ApiKeyController::class, 'apiModels']);
-    Route::get('/api-keys', [ApiKeyController::class, 'getApiKeys']);
-
 
     // Route::get('/customer-requests', [CustomerRequestController::class, 'getRequests']);
     // Route::post('/customer-requests/{id}/approve', [CustomerRequestController::class, 'approveRequest']);
@@ -133,10 +126,10 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::get('/getAllCustomerUsers', [CustomerUserController::class, 'getAllCustomerUsers']);
     Route::get('/organizationalUserWithCustomerAdmins', [AuthController::class, 'organizationalUserWithCustomerAdmins']);
 
-    // Tool routes
-    // Route::get('/tools', [ToolController::class, 'index']);
-    // Route::post('/tools', [ToolController::class, 'store']);
-    // Route::get('/tools/{id}', [ToolController::class, 'show']);
-    // Route::put('/tools/{id}', [ToolController::class, 'update']);
-    // Route::delete('/tools/{id}', [ToolController::class, 'destroy']);
+    Route::apiResource('instructions', InstructionController::class);
+    Route::post('organizations/{organization}/instructions', [OrganizationController::class, 'assignInstructions']);
+
+    Route::resource('settings', SettingController::class);
+    Route::get('/api-keys', [SettingController::class, 'getApiKeys']);
+    Route::get('/setting-value', [SettingController::class, 'settingValue']);
 });

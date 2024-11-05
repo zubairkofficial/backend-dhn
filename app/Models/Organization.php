@@ -9,6 +9,8 @@ class Organization extends Model
 {
     use HasFactory;
 
-    
+    public function instructions()
+    {
+        return $this->belongsToMany(Instruction::class, 'organization_instruction');
+    }
 }
-
