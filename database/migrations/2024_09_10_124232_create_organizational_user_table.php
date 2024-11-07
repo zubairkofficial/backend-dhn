@@ -15,12 +15,9 @@ class CreateOrganizationalUserTable extends Migration
         Schema::create('organizational_users', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('user_id');
-            $table->unsignedBigInteger('organizational_id');
+            $table->unsignedBigInteger('organizational_id')->nullable()->constrained();
+            $table->unsignedBigInteger('customer_id')->nullable()->constrained();
             $table->timestamps();
-
-            // Foreign key constraints
-            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
-            $table->foreign('organizational_id')->references('id')->on('organizations')->onDelete('cascade');
         });
     }
 

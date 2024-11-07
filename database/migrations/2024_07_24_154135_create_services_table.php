@@ -16,6 +16,7 @@ return new class extends Migration
             $table->text('name');
             $table->longText('description');
             $table->text('link');
+            $table->string('image')->nullable();
             $table->integer('status')->default(1);
             $table->timestamps();
         });

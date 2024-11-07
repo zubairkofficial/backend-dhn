@@ -489,14 +489,10 @@ class AuthController extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
-        // Return the user's data with the send_email field
         return response()->json([
             'id' => $user->id,
             'name' => $user->name,
-            'email' => $user->email,
-            'send_email' => $user->send_email,
-
-
+            'email' => $user->email
         ]);
     }
 

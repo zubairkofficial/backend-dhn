@@ -167,12 +167,6 @@ class VoiceController extends Controller
 
         try {
 
-            // $user = Auth::user();
-            // if ($user && $user->send_email !== $data['email']) {
-            //     $user->send_email = $data['email'];
-            //     $user->save();
-            // }
-
             Email::create([
                 'email' => $data['email'],
                 'transcriptionText' => $data['transcriptionText'],
