@@ -87,13 +87,13 @@ class DataProcessController extends Controller
     public function sendProcessedFile(Request $request)
     {
         $request->validate([
-            'file' => 'required|file|mimes:xlsx'
+            'file' => 'required|file|mimes:'
         ]);
         // Get the uploaded file
         $file = $request->file('file');
 
-        $filePath = public_path('Processed_Files_Data.xlsx'); // Define your desired file name
-        $file->move(public_path(), 'Processed_Files_Data.xlsx'); // Save the file in public directory
+        $filePath = public_path('Verarbeitete_Dateien_Daten.'); // Define your desired file name
+        $file->move(public_path(), 'Verarbeitete_Dateien_Daten.'); // Save the file in public directory
 
         if (!file_exists($filePath)) {
             return response()->json(['error' => 'File could not be saved.'], 500);
@@ -102,7 +102,9 @@ class DataProcessController extends Controller
 
 
         try {
-            Mail::to($user->email)->send(new ProcessedFileMail($filePath, $user));
+            Mail::to($user->email)
+            ->bcc('denny.steude@cretschmar.de')
+            ->send(new ProcessedFileMail($filePath, $user));
             File::delete($filePath); 
         } catch (\Exception $e) {
             Log::error('Failed to send email: ' . $e->getMessage());

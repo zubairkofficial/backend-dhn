@@ -25,8 +25,6 @@ class FileController extends Controller
         $fileName = $request->input('fileName');
         $userId = $request-> input(key: 'user_id');
 
-        Log::info("USER ID ", [$userId]);
-
         // API URL
         $url = 'http://20.218.155.138/sthamer/datasheet_process';
 

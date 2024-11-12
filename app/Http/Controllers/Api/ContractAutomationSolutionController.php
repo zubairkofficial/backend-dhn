@@ -29,8 +29,6 @@ class ContractAutomationSolutionController extends Controller
         $fileName = $file->getClientOriginalName();
         $userId = $request->input('user_id');
 
-        Log::info("USER ID UPLOADER CAS", [$userId]);
-
         // API URL
         $url = 'http://20.218.155.138/contract_automation';
 
@@ -70,7 +68,6 @@ class ContractAutomationSolutionController extends Controller
             ]);
 
             $endTime = microtime(true);
-            // Log::info("Request completed in " . ($endTime - $startTime) . " seconds.");
 
             // Get and process the response
             $responseBody = $response->getBody()->getContents();

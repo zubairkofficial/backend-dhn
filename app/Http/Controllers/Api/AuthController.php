@@ -71,8 +71,6 @@ class AuthController extends Controller
                 'customer_id' => $request->creator_id,
                 'user_id' => $user->id
             ]);
-            Log::info('organizational user created');
-            Log::info('user id', [$user->id]);
         }
         $token = $user->createToken('user_token')->plainTextToken;
 
@@ -285,8 +283,6 @@ class AuthController extends Controller
                 'user_id' => $request->organizationalUserId,
                 'organizational_id' => $request->userId,
             ]);
-            Log::info('User Linked Successfully.');
-            Log::info('user id', [$request->user_id]);
         }
 
 
@@ -400,9 +396,6 @@ class AuthController extends Controller
         // Fetch the IDs of the child organizational users (user_id and organizational_id)
         $childUserIds = OrganizationalUser::where('customer_id', $user->id)->pluck('user_id')->toArray();
         $childOrgIds = OrganizationalUser::where('customer_id', $user->id)->pluck('organizational_id')->toArray();
-
-        Log::info('Child User IDs (customer):', [$childUserIds]);
-        Log::info('Child Org IDs (customer):', [$childOrgIds]);
 
         // Fetch the child users (both user_id and organizational_id)
         $childUsers = User::whereIn('id', $childUserIds)->get();

@@ -86,7 +86,6 @@ class VoiceController extends Controller
     
             // Check if choices and necessary fields exist in the response
             if (!isset($responseData['choices'][0]['message']['content'])) {
-                // Log::error("OpenAI API response is missing expected content", ['response' => $responseData]);
                 return response()->json([
                     'status' => 500,
                     'message' => 'OpenAI API response format was unexpected. Please try again.',
@@ -102,8 +101,6 @@ class VoiceController extends Controller
             $jsonSummary = json_decode($cleanedJsonContent, true);
     
             if (json_last_error() !== JSON_ERROR_NONE) {
-                // Log the error if JSON decoding fails
-                // Log::error("Failed to decode JSON content", ['jsonContent' => $cleanedJsonContent]);
                 return response()->json([
                     'status' => 500,
                     'message' => 'Failed to decode JSON response from OpenAI.',
@@ -117,9 +114,6 @@ class VoiceController extends Controller
                     'message' => $jsonSummary['message'] ?? 'Der Transkriptionstext ist nicht gültig. Versuchen Sie es erneut.'
                 ]);
             }
-    
-            // Log parsed JSON content to inspect structure
-            // Log::info("Parsed JSON summary:", ['jsonSummary' => $jsonSummary]);
     
             // Extract summary details and store in the database
             $thema = $jsonSummary['topic'] ?? null;

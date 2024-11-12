@@ -155,17 +155,8 @@ class CustomerUserController extends Controller
         // Get the authenticated user (the user who has created other users)
         $user = $request->user();
 
-        // Log the full user details
-        Log::info('Authenticated user details:', ['user' => $user]);
-
         // Fetch all the records from organizational_user where user_id is the creator's ID
         $createdUsers = OrganizationalUser::where('customer_id', $user->id)->pluck('organizational_id');
-
-        // If the user has not created any other users
-        if ($createdUsers->isEmpty()) {
-            Log::warning('User has not created any other users', ['user_id' => $user->id]);
-
-        }
 
         // Fetch the user details for the users created by this user
         $usersInOrganization = User::whereIn('id', $createdUsers)->get();
@@ -197,9 +188,6 @@ class CustomerUserController extends Controller
                 'is_user_organizational' => $user->is_user_organizational,
             ];
         });
-
-        // Log the full list of created users with service names and organization names
-        // Log::info('Users created by this user:', ['created_users' => $usersWithServiceNames]);
 
         // Return the created users with service names and organization names
         return response()->json([

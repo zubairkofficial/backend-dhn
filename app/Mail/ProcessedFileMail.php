@@ -21,10 +21,10 @@ class ProcessedFileMail extends Mailable
 
     public function build()
     {
-        return $this->subject('Processed File')
-                    ->view('processed_file') // Create a view for email content
+        return $this->subject('Verarbeitete Datei')
+                    ->view('processed_file')
                     ->attach($this->filePath, [
-                        'as' => 'Processed_Files_Data.xlsx',
+                        'as' => 'Verarbeitete_Dateien_Daten.xlsx',
                         'mime' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
                     ]);
     }
