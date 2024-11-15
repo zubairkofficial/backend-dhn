@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\ContractAutomationSolutionController;
 use App\Http\Controllers\Api\DataProcessController;
 use App\Http\Controllers\Api\GPTModelController;
 use App\Http\Controllers\Api\InstructionController;
+use App\Http\Controllers\Api\InvoiceController;
 use App\Http\Controllers\Api\SettingController;
 use App\Http\Controllers\CustomerUserController;
 use App\Http\Controllers\Api\VoiceController;
@@ -40,6 +41,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/getAllCustomerAdmins', [CustomerAdminController::class, 'getCustomerUsers']);
 });
 Route::get('get-trans', [TranslationController::class, 'allTrans']);
+
+Route::post('/process-pdf', [InvoiceController::class, 'processPdf']);
 
 Route::group(['middleware' => 'auth:sanctum'], function () {
 
@@ -132,4 +135,14 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::resource('settings', SettingController::class);
     Route::get('/api-keys', [SettingController::class, 'getApiKeys']);
     Route::get('/setting-value', [SettingController::class, 'settingValue']);
+
+    Route::post('/extractInvoiceData', [InvoiceController::class, 'extractInvoiceData']);
+    Route::get('/showLatestInvoice', [InvoiceController::class, 'showLatestInvoice']);
+    Route::get('/postinvoice2', [InvoiceController::class, 'postinvoice2']);
+    Route::post('/postinvoice', [InvoiceController::class, 'postinvoice']);
+    Route::any('/compareInvoices', [InvoiceController::class, 'compareInvoices']);
+    Route::get('/invoiceHistory', [InvoiceController::class, 'invoiceHistory']);
+    Route::get('/getInvoiceDataByUploadDate/{date}', [InvoiceController::class, 'getInvoiceDataByUploadDate']);
+    Route::get('/deleteInvoiceById/{id}', [InvoiceController::class, 'deleteInvoiceById']);
+    Route::delete('/deleteInvoicesByUploadDate/{uploadDate}', [InvoiceController::class, 'deleteInvoicesByUploadDate']);
 });
