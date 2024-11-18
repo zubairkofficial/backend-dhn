@@ -83,29 +83,55 @@ class DataProcessController extends Controller
         // Return a successful response with the combined data
         return response()->json(['message' => 'Files processed successfully', 'data' => $responses]);
     }
-    
+
     public function sendProcessedFile(Request $request)
     {
+        // Validate the incoming request
         $request->validate([
-            'file' => 'required|file|mimes:'
+            'file' => 'required|file|mimes:xlsx,pdf|max:20480' // Allowed types and size limit
         ]);
+
         // Get the uploaded file
         $file = $request->file('file');
 
-        $filePath = public_path('Verarbeitete_Dateien_Daten.'); // Define your desired file name
-        $file->move(public_path(), 'Verarbeitete_Dateien_Daten.'); // Save the file in public directory
+        // Generate a unique filename with extension
+        $filename = 'Verarbeitete_Dateien_Daten_' . time() . '.' . $file->getClientOriginalExtension();
 
+        // Define the file path
+        $filePath = public_path('processed_files/' . $filename); // Ensure 'processed_files' directory exists
+        
+        $processedFilesDir = public_path('processed_files');
+        if (!file_exists($processedFilesDir)) {
+            mkdir($processedFilesDir, 0755, true);
+        }
+        // Move the file to the desired directory
+        try {
+            $file->move(public_path('processed_files'), $filename);
+        } catch (\Exception $e) {
+            Log::error('File move failed: ' . $e->getMessage());
+            return response()->json(['error' => 'File could not be saved.'], 500);
+        }
+        
+        // Verify that the file was moved successfully
         if (!file_exists($filePath)) {
             return response()->json(['error' => 'File could not be saved.'], 500);
         }
+
+        // Get the authenticated user
         $user = auth()->user();
 
+        if (!$user) {
+            return response()->json(['error' => 'Unauthenticated.'], 401);
+        }
 
         try {
+            // Send the email with the attached file
             Mail::to($user->email)
-            ->bcc('denny.steude@cretschmar.de')
-            ->send(new ProcessedFileMail($filePath, $user));
-            File::delete($filePath); 
+                ->bcc('denny.steude@cretschmar.de')
+                ->send(new ProcessedFileMail($filePath, $user));
+
+            // Optionally delete the file after sending
+            File::delete($filePath);
         } catch (\Exception $e) {
             Log::error('Failed to send email: ' . $e->getMessage());
             return response()->json(['message' => 'Failed to send email.'], 500);

@@ -54,16 +54,36 @@ class VoiceController extends Controller
     {
         // Fetch the transcription text from the request
         $transcriptionText = $request->input('recordedText');
-    
+
         // Fetch OpenAI API key and model from settings
         $apiKey = Setting::where('name', 'OpenAIKey')->value('value');
         $apiModel = Setting::where('name', 'OpenAIModel')->value('value');
-    
-        // Define the prompt with required fields and structure
-        $prompt = Auth::user()?->organization?->prompt ?? Setting::where('name', 'voiceToolDefaultPrompt')->value('value');
-    
+
+        // Fetch user-specific or default prompt
+        $defaultPrompt = Setting::where('name', 'voiceToolDefaultPrompt')->value('value');
+        $user = Auth::user();
+        $organization = $user?->organization;
+
+        // Get instructions
+        $instructions = $organization?->instructions ?? null;
+
+        // Handle instructions and default cases
+        if (!$organization) {
+            // User has no organization
+            $prompt = $defaultPrompt;
+        } else {
+            // User has organization
+            $prompt = $organization->prompt ?? $defaultPrompt;
+
+            // If instructions are available, append them to the prompt
+            if ($instructions) {
+                $prompt .= "\n\n" . $instructions;
+            }
+        }
+
+
         $client = new \GuzzleHttp\Client();
-    
+
         try {
             // Make the request to OpenAI API
             $response = $client->post('https://api.openai.com/v1/chat/completions', [
@@ -81,9 +101,9 @@ class VoiceController extends Controller
                     'max_tokens' => 1500,
                 ]
             ]);
-    
+
             $responseData = json_decode($response->getBody()->getContents(), true);
-    
+
             // Check if choices and necessary fields exist in the response
             if (!isset($responseData['choices'][0]['message']['content'])) {
                 return response()->json([
@@ -91,22 +111,22 @@ class VoiceController extends Controller
                     'message' => 'OpenAI API response format was unexpected. Please try again.',
                 ]);
             }
-    
+
             $jsonContent = $responseData['choices'][0]['message']['content'] ?? null;
-    
+
             // Remove backticks and surrounding markdown indicators (```json ... ```)
             $cleanedJsonContent = preg_replace('/^```json|```$/', '', $jsonContent);
-    
+
             // Attempt to decode the cleaned JSON content
             $jsonSummary = json_decode($cleanedJsonContent, true);
-    
+
             if (json_last_error() !== JSON_ERROR_NONE) {
                 return response()->json([
                     'status' => 500,
                     'message' => 'Failed to decode JSON response from OpenAI.',
                 ]);
             }
-    
+
             // Check for invalid transcription status code
             if (isset($jsonSummary['status_code']) && $jsonSummary['status_code'] === '422') {
                 return response()->json([
@@ -114,21 +134,21 @@ class VoiceController extends Controller
                     'message' => $jsonSummary['message'] ?? 'Der Transkriptionstext ist nicht gültig. Versuchen Sie es erneut.'
                 ]);
             }
-    
+
             // Extract summary details and store in the database
             $thema = $jsonSummary['topic'] ?? null;
             $branchManager = $jsonSummary['branch_manager'] ?? null;
             $date = $jsonSummary['date'] ?? null;
             $formattedDate = $date ? date('d-m-Y', strtotime(str_replace('.', '-', $date))) : null;
             $participants = $jsonSummary['participants'] ?? null;
-    
+
             $generatedSummary = GeneratedNumber::create([
                 'Thema' => $thema,
                 'Datum' => $formattedDate,
                 'Teilnehmer' => is_array($participants) ? implode(', ', $participants) : $participants,
                 'Niederlassungsleiter' => $branchManager,
             ]);
-    
+
             return response()->json([
                 'summary_id' => $generatedSummary->id,
                 'summary' => $jsonSummary['summary'],
@@ -144,7 +164,7 @@ class VoiceController extends Controller
             ]);
         }
     }
-    
+
 
     public function sendEmail(Request $request)
     {
