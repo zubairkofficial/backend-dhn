@@ -27,8 +27,6 @@
 
         <p>Mit freundlichen Grüßen,<br>
             Ihr Cretschmar-Team</p>
-
-        <p>Vielen Dank,</p>
     </div>
 </body>
 
