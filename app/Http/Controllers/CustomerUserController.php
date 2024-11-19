@@ -194,50 +194,111 @@ class CustomerUserController extends Controller
             'organization_users' => $usersWithServiceNames,
         ], 200);
     }
+    
     public function getAllCustomerUsers()
     {
         // Fetch all users where is_user_customer is 1
         $customerUsers = User::where('is_user_customer', 1)->get();
-
+    
         // If no users are found, return a message
         if ($customerUsers->isEmpty()) {
             return response()->json([
                 'message' => 'No customer users found.'
             ], 200);
         }
-
+    
         // Fetch service IDs for each user
         $serviceIds = $customerUsers->pluck('services')->flatten();
-
+    
         // Fetch service names based on service IDs
         $serviceNames = Service::whereIn('id', $serviceIds)->pluck('name', 'id');
-
+    
         // Fetch organization names based on org_id
         $orgIds = $customerUsers->pluck('org_id');
         $organizationNames = Organization::whereIn('id', $orgIds)->pluck('name', 'id');
-
-        // Map users and include services and organization names
+    
+        // Map users and include services, organization names, and user count data
         $usersWithServiceAndOrgNames = $customerUsers->map(function ($user) use ($serviceNames, $organizationNames) {
             // Get the service names for the user
             $userServiceNames = collect($user->services)->map(function ($serviceId) use ($serviceNames) {
                 return $serviceNames->get($serviceId);
             });
-
-            // Return the user data with service names and organization name
+    
+            // Call getUserCount to retrieve the user's specific data
+            $userCountData = $this->getUserCount($user->id)->getData(true);
+    
+            // Return the user data with service names, organization name, and user count data
             return [
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
                 'services' => $userServiceNames,
                 'organization_name' => $organizationNames->get($user->org_id),
+                'total_document_count' => $userCountData['total_document_count'] ?? 0,
+                'total_contract_solution_count' => $userCountData['total_contract_solution_count'] ?? 0,
+                'total_data_process_count' => $userCountData['total_data_process_count'] ?? 0,
+                'total_free_data_process_count' => $userCountData['total_free_data_process_count'] ?? 0,
             ];
         });
-
-        // Return the list of customer users with service names and organization names
+    
+        // Return the list of customer users with service names, organization names, and user count data
         return response()->json([
             'customer_users' => $usersWithServiceAndOrgNames,
         ], 200);
     }
+    
 
+    private function getUserCount($id)
+    {
+        // Fetch initial user IDs excluding the logged-in user
+        $ids = OrganizationalUser::where('customer_id', $id)
+            ->where('user_id', '!=', auth()->id())
+            ->distinct()
+            ->pluck('user_id');
+    
+        // Collect all unique organizational IDs related to the initial user IDs
+        $additionalIds = OrganizationalUser::whereIn('user_id', $ids)
+            ->whereNotNull('organizational_id')
+            ->pluck('organizational_id');
+    
+        // Merge all IDs, including the provided $id
+        $uniqueIds = $ids->merge($additionalIds)->push((int)$id)->unique();
+    
+        // Preload necessary relationships for efficiency
+        $users = User::whereIn('id', $uniqueIds)
+            ->with(['documents', 'contractSolutions', 'dataprocesses', 'freedataprocesses'])
+            ->get();
+    
+        // Initialize counters
+        $totalDocumentCount = 0;
+        $totalContractSolutionCount = 0;
+        $totalDataProcessCount = 0;
+        $totalFreeDataProcessCount = 0;
+    
+        // Process each user
+        foreach ($users as $user) {
+            $userServices = $user->services ?? [];
+    
+            if (in_array('1', $userServices)) {
+                $totalDocumentCount += $user->documents->count();
+            }
+            if (in_array('3', $userServices)) {
+                $totalContractSolutionCount += $user->contractSolutions->count();
+            }
+            if (in_array('4', $userServices)) {
+                $totalDataProcessCount += $user->dataprocesses->count();
+            }
+            if (in_array('5', $userServices)) {
+                $totalFreeDataProcessCount += $user->freedataprocesses->count();
+            }
+        }
+    
+        return response()->json([
+            'total_document_count' => $totalDocumentCount,
+            'total_contract_solution_count' => $totalContractSolutionCount,
+            'total_data_process_count' => $totalDataProcessCount,
+            'total_free_data_process_count' => $totalFreeDataProcessCount,
+        ]);
+    }
 
 }

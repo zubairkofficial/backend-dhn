@@ -60,7 +60,6 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     // Route::post('/customer-requests/{id}/decline', [CustomerRequestController::class, 'declineRequest']);
     // User Usage Routes
     Route::get('/user/{id}/document-count', [UsageController::class, 'getUserDocumentCount']);
-    Route::get('/user/{id}/get-user-count', [UsageController::class, 'getUserCount']);
 
     // Service Routes
     Route::get('all-services', [ServiceController::class, 'allServices']);
