@@ -52,40 +52,30 @@ class VoiceController extends Controller
 
     public function generateSummary(Request $request)
     {
-        // Fetch the transcription text from the request
         $transcriptionText = $request->input('recordedText');
-
-        // Fetch OpenAI API key and model from settings
         $apiKey = Setting::where('name', 'OpenAIKey')->value('value');
         $apiModel = Setting::where('name', 'OpenAIModel')->value('value');
-
-        // Fetch user-specific or default prompt
         $defaultPrompt = Setting::where('name', 'voiceToolDefaultPrompt')->value('value');
         $user = Auth::user();
         $organization = $user?->organization;
 
-        // Get instructions
+        // Get instructions and extract field titles
         $instructions = $organization?->instructions ?? null;
+        $instructionTitles = $instructions ? $instructions->pluck('title')->toArray() : [];
 
-        // Handle instructions and default cases
-        if (!$organization) {
-            // User has no organization
-            $prompt = $defaultPrompt;
-        } else {
-            // User has organization
-            $prompt = $organization->prompt ?? $defaultPrompt;
-
-            // If instructions are available, append them to the prompt
-            if ($instructions) {
-                $prompt .= "\n\n" . $instructions;
-            }
+        // Construct the OpenAI prompt dynamically
+        $prompt = $defaultPrompt;
+        if ($organization && $instructions) {
+            $prompt .= "\n\nEnsure the summary includes the following fields: " . implode(', ', $instructionTitles) . ". Include additional summary data as needed.";
         }
-
 
         $client = new \GuzzleHttp\Client();
 
         try {
-            // Make the request to OpenAI API
+            // Log::info("user instructions", [$instructionTitles]);
+            // Log::info("prompt data", [$prompt]);
+
+            // Make OpenAI API request
             $response = $client->post('https://api.openai.com/v1/chat/completions', [
                 'headers' => [
                     'Authorization' => 'Bearer ' . $apiKey,
@@ -97,14 +87,14 @@ class VoiceController extends Controller
                         ['role' => 'system', 'content' => 'You are a helpful assistant designed to output valid JSON.'],
                         ['role' => 'user', 'content' => $prompt . "\n\n" . $transcriptionText]
                     ],
-                    'temperature' => 0.5,
+                    'temperature' => 0.7,
                     'max_tokens' => 1500,
                 ]
             ]);
 
             $responseData = json_decode($response->getBody()->getContents(), true);
+            // Log::info("VOICE SUMMARY DATA", $responseData);
 
-            // Check if choices and necessary fields exist in the response
             if (!isset($responseData['choices'][0]['message']['content'])) {
                 return response()->json([
                     'status' => 500,
@@ -113,11 +103,7 @@ class VoiceController extends Controller
             }
 
             $jsonContent = $responseData['choices'][0]['message']['content'] ?? null;
-
-            // Remove backticks and surrounding markdown indicators (```json ... ```)
             $cleanedJsonContent = preg_replace('/^```json|```$/', '', $jsonContent);
-
-            // Attempt to decode the cleaned JSON content
             $jsonSummary = json_decode($cleanedJsonContent, true);
 
             if (json_last_error() !== JSON_ERROR_NONE) {
@@ -127,31 +113,28 @@ class VoiceController extends Controller
                 ]);
             }
 
-            // Check for invalid transcription status code
-            if (isset($jsonSummary['status_code']) && $jsonSummary['status_code'] === '422') {
-                return response()->json([
-                    'status' => 422,
-                    'message' => $jsonSummary['message'] ?? 'Der Transkriptionstext ist nicht gültig. Versuchen Sie es erneut.'
-                ]);
-            }
+            // Dynamically map fields to database columns, defaulting to null for missing fields
+            $fieldsToSave = [
+                'Datum' => isset($jsonSummary['date'])
+                    ? date('d-m-Y', strtotime(str_replace('.', '-', $jsonSummary['date'])))
+                    : null,
+                'Thema' => $jsonSummary['topic'] ?? null,
+                'Teilnehmer' => $jsonSummary['participants'] ?? null,
+                'Niederlassungsleiter' => $jsonSummary['branch_manager'] ?? null,
+                'auther' => $jsonSummary['author'] ?? null,
+                'BM' => $jsonSummary['shareholder'] ?? null,
+                // Encode the JSON summary to save as a string in the database
+                'json_data' => json_encode($jsonSummary),
+            ];
 
-            // Extract summary details and store in the database
-            $thema = $jsonSummary['topic'] ?? null;
-            $branchManager = $jsonSummary['branch_manager'] ?? null;
-            $date = $jsonSummary['date'] ?? null;
-            $formattedDate = $date ? date('d-m-Y', strtotime(str_replace('.', '-', $date))) : null;
-            $participants = $jsonSummary['participants'] ?? null;
+            // Log::info("DECODE SUMMARY DATA", ['json_summary' => json_encode($jsonSummary)]);
 
-            $generatedSummary = GeneratedNumber::create([
-                'Thema' => $thema,
-                'Datum' => $formattedDate,
-                'Teilnehmer' => is_array($participants) ? implode(', ', $participants) : $participants,
-                'Niederlassungsleiter' => $branchManager,
-            ]);
+
+            $generatedSummary = GeneratedNumber::create($fieldsToSave);
 
             return response()->json([
                 'summary_id' => $generatedSummary->id,
-                'summary' => $jsonSummary['summary'],
+                'summary' => $jsonSummary['summary'] ?? null,
                 'json_summary' => $jsonSummary,
                 'status' => 200,
                 'message' => 'Data successfully stored.',
@@ -164,6 +147,133 @@ class VoiceController extends Controller
             ]);
         }
     }
+
+
+
+
+    // public function generateSummary(Request $request)
+    // {
+    //     // Fetch the transcription text from the request
+    //     $transcriptionText = $request->input('recordedText');
+
+    //     // Fetch OpenAI API key and model from settings
+    //     $apiKey = Setting::where('name', 'OpenAIKey')->value('value');
+    //     $apiModel = Setting::where('name', 'OpenAIModel')->value('value');
+
+    //     // Fetch user-specific or default prompt
+    //     $defaultPrompt = Setting::where('name', 'voiceToolDefaultPrompt')->value('value');
+    //     $user = Auth::user();
+    //     $organization = $user?->organization;
+
+    //     // Get instructions
+    //     $instructions = $organization?->instructions ?? null;
+
+    //     // Handle instructions and default cases
+    //     if (!$organization) {
+    //         // User has no organization
+    //         $prompt = $defaultPrompt;
+    //     } else {
+    //         // User has organization
+    //         $prompt = $organization->prompt ?? $defaultPrompt;
+
+    //         // If instructions are available, append them to the prompt
+    //         if ($instructions) {
+    //             $prompt .= "\n\n" . $instructions;
+    //         }
+    //     }
+
+    //     Log::info("user instructions", [$instructions]);
+
+    //     $client = new \GuzzleHttp\Client();
+
+    //     try {
+    //         // Log::info("default prompt DATA", [$defaultPrompt]);
+    //         Log::info("prompt data", [$prompt]);
+
+    //         // Make the request to OpenAI API
+    //         $response = $client->post('https://api.openai.com/v1/chat/completions', [
+    //             'headers' => [
+    //                 'Authorization' => 'Bearer ' . $apiKey,
+    //                 'Content-Type' => 'application/json',
+    //             ],
+    //             'json' => [
+    //                 'model' => $apiModel,
+    //                 'messages' => [
+    //                     ['role' => 'system', 'content' => 'You are a helpful assistant designed to output valid JSON.'],
+    //                     ['role' => 'user', 'content' => $prompt . "\n\n" . $transcriptionText]
+    //                 ],
+    //                 'temperature' => 0.7,
+    //                 'max_tokens' => 1500,
+    //             ]
+    //         ]);
+
+    //         $responseData = json_decode($response->getBody()->getContents(), true);
+    //         Log::info("VOICE SUMMARY DATA", $responseData);
+    //         // Check if choices and necessary fields exist in the response
+    //         if (!isset($responseData['choices'][0]['message']['content'])) {
+    //             return response()->json([
+    //                 'status' => 500,
+    //                 'message' => 'OpenAI API response format was unexpected. Please try again.',
+    //             ]);
+    //         }
+
+    //         $jsonContent = $responseData['choices'][0]['message']['content'] ?? null;
+
+    //         // Remove backticks and surrounding markdown indicators (```json ... ```)
+    //         $cleanedJsonContent = preg_replace('/^```json|```$/', '', $jsonContent);
+
+    //         // Attempt to decode the cleaned JSON content
+    //         $jsonSummary = json_decode($cleanedJsonContent, true);
+
+    //         if (json_last_error() !== JSON_ERROR_NONE) {
+    //             return response()->json([
+    //                 'status' => 500,
+    //                 'message' => 'Failed to decode JSON response from OpenAI.',
+    //             ]);
+    //         }
+
+    //         // Check for invalid transcription status code
+    //         if (isset($jsonSummary['status_code']) && $jsonSummary['status_code'] === '422') {
+    //             return response()->json([
+    //                 'status' => 422,
+    //                 'message' => $jsonSummary['message'] ?? 'Der Transkriptionstext ist nicht gültig. Versuchen Sie es erneut.'
+    //             ]);
+    //         }
+
+    //         // Log::info(['json summary'=>$jsonSummary]);
+
+    //         // Extract summary details and store in the database
+    //         $thema = $jsonSummary['topic'] ?? null;
+    //         $branchManager = $jsonSummary['branch_manager'] ?? null;
+    //         $date = $jsonSummary['date'] ?? null;
+    //         $formattedDate = $date ? date('d-m-Y', strtotime(str_replace('.', '-', $date))) : null;
+    //         $participants = $jsonSummary['participants'] ?? null;
+    //         $author = $jsonSummary['author'] ?? null;
+
+    //         $generatedSummary = GeneratedNumber::create([
+    //             'Thema' => $thema,
+    //             'Datum' => $formattedDate,
+    //             'Teilnehmer' => is_array($participants) ? implode(', ', $participants) : $participants,
+    //             'Niederlassungsleiter' => $branchManager,
+    //             'auther' => $author,
+
+    //         ]);
+
+    //         return response()->json([
+    //             'summary_id' => $generatedSummary->id,
+    //             'summary' => $jsonSummary['summary'],
+    //             'json_summary' => $jsonSummary,
+    //             'status' => 200,
+    //             'message' => 'Data successfully stored.',
+    //         ]);
+    //     } catch (\Exception $e) {
+    //         Log::error("Error generating summary: " . $e->getMessage());
+    //         return response()->json([
+    //             'status' => 500,
+    //             'message' => 'Error generating or storing summary: ' . $e->getMessage(),
+    //         ]);
+    //     }
+    // }
 
 
     public function sendEmail(Request $request)

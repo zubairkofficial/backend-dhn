@@ -21,6 +21,8 @@ use App\Http\Controllers\UsageController;
 use App\Http\Controllers\CustomerAdminController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ApiKeyController;
+use App\Http\Middleware\UsageLimitMiddleware;
+
 // Auth Routes
 Route::prefix('auth')->group(function () {
     Route::post('login', [AuthController::class, 'login']);
@@ -60,6 +62,11 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     // Route::post('/customer-requests/{id}/decline', [CustomerRequestController::class, 'declineRequest']);
     // User Usage Routes
     Route::get('/user/{id}/document-count', [UsageController::class, 'getUserDocumentCount']);
+    Route::get('/check-usage-count/{model}', [UsageController::class, 'getUsageCount']);
+    Route::get('all-service-availability', [UsageController::class, 'getServiceAvailability']);
+
+    Route::get('/user-tool-counter', [UserController::class, 'userToolCounter']);
+
 
     // Service Routes
     Route::get('all-services', [ServiceController::class, 'allServices']);
@@ -92,11 +99,14 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::post('/generateSummary', [VoiceController::class, 'generateSummary']);
     Route::get('/getData', [VoiceController::class, 'getData']);
     Route::get('/getLatestNumber/{summary_id}', [VoiceController::class, 'getLatestNumber']);
-
-    Route::post('/uploadFile', [FileController::class, 'uploadFile']);
-
+    // apply check document middleware
+    Route::middleware([UsageLimitMiddleware::class . ':Document'])->group(function () {
+        Route::post('/uploadFile', [FileController::class, 'uploadFile']);
+    });
     // Contract automation
-    Route::post('/contract-automation', [ContractAutomationSolutionController::class, 'fetchContractAutomation']);
+    Route::middleware([UsageLimitMiddleware::class . ':ContractSolutions'])->group(function () {
+        Route::post('/contract-automation', [ContractAutomationSolutionController::class, 'fetchContractAutomation']);
+    });
 
     // DataProcess
     Route::post('/data-process', [DataProcessController::class, 'fetchDataProcess']);
@@ -122,6 +132,7 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
 
     Route::post('/registerUserByCustomer', [CustomerUserController::class, 'registerUserByCustomer']);
     Route::post('/registerOrganizationalUserByCustomer', [CustomerUserController::class, 'registerOrganizationalUserByCustomer']);
+    Route::post('/update-customer-user/{id}', [CustomerUserController::class, 'updateCustomerUser']);
 
     Route::get('/getOrganizationUsersForCustomer', [CustomerUserController::class, 'getOrganizationUsersForCustomer']);
     Route::get('customer-normal-users/{id}', [UserController::class, 'getCustomerNormalUsers']);

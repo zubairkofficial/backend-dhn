@@ -30,11 +30,18 @@ class OrganizationalUser extends Model
     {
         return $this->hasMany(OrganizationalUser::class, 'user_id', 'user_id')->with('normalUser');
     }
-
+    public function normalOrganizational()
+    {
+        return $this->belongsTo(User::class);
+    }
 
     // Normal users (linked via organizational_id)
     public function normalUser()
     {
         return $this->hasMany(OrganizationalUser::class, 'organizational_id', 'organizational_id');
+    }
+
+    public function normalUserToolCount(){
+        return $this->normalUser()->count();
     }
 }

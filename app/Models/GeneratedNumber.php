@@ -17,6 +17,6 @@ class GeneratedNumber extends Model
         'Niederlassungsleiter',
         'auther',
         'BM',
+        'json_data',
     ];
-
 }

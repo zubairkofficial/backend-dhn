@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Auth;
 use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
@@ -27,7 +28,7 @@ class User extends Authenticatable
         'is_user_customer'
     ];
 
-    protected $with =['organization'];
+    protected $with = ['organization'];
     /**
      * The attributes that should be hidden for serialization.
      *
@@ -58,9 +59,9 @@ class User extends Authenticatable
         return $this->belongsToMany(Service::class, 'services');
     }
 
-    public function organizationUsers(): HasMany
+    public function organizationalUsers()
     {
-        return $this->hasMany(OrganizationalUser::class, 'organization_id');
+        return $this->hasMany(OrganizationalUser::class, 'customer_id');
     }
 
     public function documents()
@@ -87,9 +88,16 @@ class User extends Authenticatable
     {
         return $this->hasMany(OrganizationalUser::class, 'customer_id')->with('organizational');
     }
+
+    
     public function customerUserWithNullOrganization()
     {
         return $this->hasOne(OrganizationalUser::class, 'customer_id')
             ->whereNull('organizational_id');
+    }
+
+    public function allNormalUsers(){
+        return $users = OrganizationalUser::where('user_id',Auth::id())->first();
+        
     }
 }

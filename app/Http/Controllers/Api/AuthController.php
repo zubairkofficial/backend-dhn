@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-
+use App\Mail\WelcomeEmail;
 use App\Models\ContractSolutions;
 use App\Models\CustomerAdmin;
 use App\Models\DataProcess;
@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Hash;
 use App\Models\OrganizationalUser;
+use Illuminate\Support\Facades\Mail;
 
 class AuthController extends Controller
 {
@@ -145,6 +146,8 @@ class AuthController extends Controller
         // Generate a token for the newly registered user
         $token = $user->createToken('user_token')->plainTextToken;
 
+        $email = new WelcomeEmail($user);
+        Mail::to($user->email)->send($email);
         // Return a response with the user data and token
         return response()->json([
             "message" => "Customer registered successfully.",
@@ -649,6 +652,7 @@ class AuthController extends Controller
         ];
 
     }
+    
     public function getAllOrganizationalUsersForCustomer($customerId)
     {
         // Fetch all records from OrganizationalUser where customer_id matches and user_id is different
@@ -693,6 +697,9 @@ class AuthController extends Controller
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
+                'counter_limit' => $user->counter_limit,
+                'current_usage' => $user->current_usage,
+                'expiration_date' => $user->expiration_date,
                 'services' => $userServiceNames,
                 'serviceIds' => collect($user->services),
                 'dataProcessCount' => $documents['dataProcessCount'],

@@ -2,6 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ContractSolutions;
+use App\Models\DataProcess;
+use App\Models\Document;
+use App\Models\FreeDataProcess;
 use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\Service;
@@ -9,7 +13,7 @@ use App\Models\OrganizationalUser;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log; // Import the Log facade
 use App\Models\Organization;
-
+use Illuminate\Support\Facades\Auth;
 
 class UserController extends Controller
 {
@@ -22,7 +26,7 @@ class UserController extends Controller
             'password' => 'required|min:8',
             'services' => 'nullable|array',
             'is_user_organizational' => 'nullable|boolean',
-            'is_user_customer'=> 'nullable|boolean',
+            'is_user_customer' => 'nullable|boolean',
             'creator_id' => 'nullable|exists:users,id',
         ], [
             'name.required' => 'Der Name ist erforderlich.',
@@ -66,7 +70,7 @@ class UserController extends Controller
         OrganizationalUser::create([
             'user_id' => $request->creator_id,
             'organizational_id' => $user->id,
-            'customer_id'=> $request->parent_id,
+            'customer_id' => $request->parent_id,
         ]);
 
         // Create a token for the new user
@@ -308,6 +312,27 @@ class UserController extends Controller
         return response()->json(['message' => 'User deleted successfully'], 200);
     }
 
+    public function userToolCounter()
+    {
+        // Get the ID of the currently logged-in user
+        $userId = Auth::id();
 
+        // Fetch counts specific to the logged-in user
+        $dataProcessCount = DataProcess::where('user_id', $userId)->count();
+        $documentsCount = Document::where('user_id', $userId)->count();
+        $contractSolutionCount = ContractSolutions::where('user_id', $userId)->count();
+        $freeDataProcessCount = FreeDataProcess::where('user_id', $userId)->count();
 
+        // Calculate the total count
+        $allCount = $dataProcessCount + $documentsCount + $contractSolutionCount + $freeDataProcessCount;
+
+        // Return counts as an array
+        return [
+            'dataProcessCount' => $dataProcessCount,
+            'documentsCount' => $documentsCount,
+            'contractSolutionCount' => $contractSolutionCount,
+            'freeDataProcessCount' => $freeDataProcessCount,
+            'allCount' => $allCount,
+        ];
+    }
 }
