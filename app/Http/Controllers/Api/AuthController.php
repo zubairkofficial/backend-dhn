@@ -138,8 +138,8 @@ class AuthController extends Controller
         ]);
 
         LogoSetting::create([
-            'user_id'=> $user->id,
-            'logo'=> 'logos/1727182162.svg',
+            'user_id' => $user->id,
+            'logo' => 'logos/1727182162.svg',
 
         ]);
 
@@ -632,33 +632,16 @@ class AuthController extends Controller
 
 
 
-    private function countToolDocument($organizationId)
-    {
-        $normalUsers = OrganizationalUser::where('user_id', $organizationId)->pluck('organizational_id')->toArray();
 
-        $dataProcessCount = DataProcess::whereIn('user_id', $normalUsers)->count();
-        $documentsCount = Document::whereIn('user_id', $normalUsers)->count();
-        $contractSolutionCount = ContractSolutions::whereIn('user_id', $normalUsers)->count();
 
-        $freeDataProcessCount = FreeDataProcess::whereIn('user_id', $normalUsers)->count();
-        $allCount = $dataProcessCount + $documentsCount + $contractSolutionCount + $freeDataProcessCount;
-
-        return [
-            'dataProcessCount' => $dataProcessCount,
-            'documentsCount' => $documentsCount,
-            'contractSolutionCount' => $contractSolutionCount,
-            'freeDataProcessCount' => $freeDataProcessCount,
-            'allCount' => $allCount,
-        ];
-
-    }
-    
     public function getAllOrganizationalUsersForCustomer($customerId)
     {
+        // yaha ka krna h
         // Fetch all records from OrganizationalUser where customer_id matches and user_id is different
         $createdUserIds = OrganizationalUser::where('customer_id', $customerId)
             ->where('user_id', '!=', auth()->id()) // Exclude the logged-in user if necessary
             ->pluck('user_id');
+        // dd($createdUserIds);
 
         // If there are no users for this customer
         if ($createdUserIds->isEmpty()) {
@@ -670,6 +653,10 @@ class AuthController extends Controller
         // Fetch the user details for the users with the provided user IDs
         $usersInOrganization = User::whereIn('id', values: $createdUserIds)->get();
 
+        $organizationalUserCount = OrganizationalUser::whereIn('user_id', values: $createdUserIds)
+            ->where('user_id', '!=', auth()->id())
+            ->whereNotNull('organizational_id')
+            ->pluck('organizational_id');
 
         // Get the service IDs from the users
         $serviceIds = $usersInOrganization->pluck('services')->flatten();
@@ -689,6 +676,16 @@ class AuthController extends Controller
             $userServiceNames = collect($user->services)->map(function ($serviceId) use ($serviceNames) {
                 return $serviceNames->get($serviceId);
             });
+          
+      
+                // Fetch records where user_id matches the user_id of the found customer
+                $organizationaldata = OrganizationalUser::where('user_id', $user->id) // Use where for a single value
+                    ->whereNotNull('organizational_id') // Ensure the organizational_id is not null
+                    ->pluck('organizational_id'); // Pluck all organizational_ids
+                $organizationalCount = $organizationaldata->count(); // Call count() directly on the collection
+
+                // dd($organizationalCount,$user->id); // This will show the count of organizational_id value
+        
 
 
             $documents = $this->countToolDocument($user->id);
@@ -708,7 +705,8 @@ class AuthController extends Controller
                 'freeDataProcessCount' => $documents['freeDataProcessCount'],
                 'allCount' => $documents['allCount'],
                 'organization_name' => $organizationNames->get($user->org_id),
-                'is_user_organizational' => $user->is_user_organizational, // Add this field
+                'is_user_organizational' => $user->is_user_organizational, // Add this 
+                'all_organization_count' => $organizationalCount,
 
             ];
         });
@@ -718,6 +716,4 @@ class AuthController extends Controller
             'organization_users' => $usersWithServiceNames,
         ], 200);
     }
-
-
 }

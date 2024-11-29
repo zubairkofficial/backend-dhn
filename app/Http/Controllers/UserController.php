@@ -19,6 +19,7 @@ class UserController extends Controller
 {
     public function register_user(Request $request)
     {
+
         // Validate the incoming request
         $request->validate([
             'name' => 'required',
@@ -65,12 +66,15 @@ class UserController extends Controller
 
         // Save the user
         $user->save();
-
+        $parent_id = OrganizationalUser::where('user_id', $request->creator_id)
+            ->whereNotNull('user_id')
+            ->pluck('customer_id')
+            ->first();
         // Save the creator and new user in OrganizationalUser
         OrganizationalUser::create([
             'user_id' => $request->creator_id,
             'organizational_id' => $user->id,
-            'customer_id' => $request->parent_id,
+            'customer_id' => $parent_id,
         ]);
 
         // Create a token for the new user
@@ -177,13 +181,17 @@ class UserController extends Controller
                 return $serviceNames->get($serviceId);
             });
 
+            $documents = $this->countToolDocumentNormalUser($user->id);
+
             // Return the user data with service names and organization name
             return [
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
                 'services' => $userServiceNames,
+                'allCount' => $documents['allCount'],
                 'organization_name' => $organizationNames->get($user->org_id),
+                'counter_limit' => $user->counter_limit,
             ];
         });
 
@@ -192,6 +200,8 @@ class UserController extends Controller
             'organization_users' => $usersWithServiceNames,
         ], 200);
     }
+
+
     public function getOrganizationUsers2($userId)
     {
         // Fetch all the records from organizational_user where user_id is the provided userId
@@ -273,7 +283,7 @@ class UserController extends Controller
             $userServiceNames = collect($user->services)->map(function ($serviceId) use ($serviceNames) {
                 return $serviceNames->get($serviceId);
             });
-
+            $documents = $this->countToolDocumentNormalUser($user->id);
             // Return the user data with service names and organization name
             return [
                 'id' => $user->id,
@@ -281,6 +291,8 @@ class UserController extends Controller
                 'email' => $user->email,
                 'services' => $userServiceNames,
                 'organization_name' => $organizationNames->get($user->org_id),
+                'allCount' => $documents['allCount'],
+                'counter_limit' => $user->counter_limit,
             ];
         });
 

@@ -64,6 +64,12 @@ class User extends Authenticatable
         return $this->hasMany(OrganizationalUser::class, 'customer_id');
     }
 
+    public function totalOrganizationalUsers()
+    {
+        return "hey hey";
+        // return $this->organizationalUsers()->count();
+    }
+
     public function documents()
     {
         return $this->hasMany(Document::class, 'user_id');
@@ -89,15 +95,15 @@ class User extends Authenticatable
         return $this->hasMany(OrganizationalUser::class, 'customer_id')->with('organizational');
     }
 
-    
+
     public function customerUserWithNullOrganization()
     {
         return $this->hasOne(OrganizationalUser::class, 'customer_id')
             ->whereNull('organizational_id');
     }
 
-    public function allNormalUsers(){
-        return $users = OrganizationalUser::where('user_id',Auth::id())->first();
-        
+    public function allNormalUsers()
+    {
+        return $users = OrganizationalUser::where('user_id', Auth::id())->first();
     }
 }

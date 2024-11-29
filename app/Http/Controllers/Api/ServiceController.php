@@ -31,7 +31,7 @@ class ServiceController extends Controller
         }
 
         // If the user is a customer (is_user_customer is 1), allow access without checking counter
-        if ($user->is_user_customer == 1) {
+        if ($user->is_user_customer == 1 || $user->user_type == 1) {
             return response()->json(Service::where('status', 1)->get());
         }
 
@@ -43,6 +43,10 @@ class ServiceController extends Controller
             ->whereNotNull('user_id')
             ->first(); // Returns an array of organizational IDs
 
+        if ($organizationalUserId === null) {
+            return response()->json(['status' => 'error', 'message' => 'Organizational user data is missing'], 400);
+        }
+
         $organizationalUserIds = OrganizationalUser::where('user_id', $organizationalUserId->user_id)
             ->whereNotNull('organizational_id')
             ->pluck('organizational_id'); // Returns an array of organizational IDs
@@ -51,6 +55,7 @@ class ServiceController extends Controller
             // If there are no valid organizational IDs, return a specific message
             return response()->json(['status' => 'error', 'message' => 'No valid organizational data found'], 400);
         }
+
 
         // Define the list of services with their associated models
         $services = [
@@ -61,7 +66,7 @@ class ServiceController extends Controller
         ];
 
         // Loop through each service and check the count of the related models
-        $updatedServices = Service::where('status', 1)->get()->map(function ($service) use ($services, $user,$organizationalUserIds, $userCounterLimit) {
+        $updatedServices = Service::where('status', 1)->get()->map(function ($service) use ($services, $user, $organizationalUserIds, $userCounterLimit) {
             // Get the model class associated with the current service
             $modelClass = $services[$service->link] ?? null;
 
@@ -71,7 +76,7 @@ class ServiceController extends Controller
                 $availableCount = max(0, $userCounterLimit - $dataCount);
 
                 // If the usage count exceeds the user's counter limit, return an error
-                if ($availableCount <= 0 || ($user->expiration_date && $user->expiration_date < now() )) {
+                if ($availableCount <= 0 || ($user->expiration_date && $user->expiration_date < now())) {
                     $service->status = 0;
                 }
             }
