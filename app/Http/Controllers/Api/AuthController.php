@@ -53,6 +53,15 @@ class AuthController extends Controller
         $user->name = $request->name;
         $user->email = $request->email;
         $user->password = Hash::make($request->password);
+        if($request->expirationDate){
+            $user->expiration_date =  $request->expirationDate;
+        }
+        if($request->counterLimit){
+            $user->counter_limit =  $request->counterLimit;
+        }
+        if($request->currentUsage){
+            $user->current_usage =  $request->currentUsage;
+        }
 
         if ($request->services) {
             $user->services = $request->services;
@@ -676,16 +685,16 @@ class AuthController extends Controller
             $userServiceNames = collect($user->services)->map(function ($serviceId) use ($serviceNames) {
                 return $serviceNames->get($serviceId);
             });
-          
-      
-                // Fetch records where user_id matches the user_id of the found customer
-                $organizationaldata = OrganizationalUser::where('user_id', $user->id) // Use where for a single value
-                    ->whereNotNull('organizational_id') // Ensure the organizational_id is not null
-                    ->pluck('organizational_id'); // Pluck all organizational_ids
-                $organizationalCount = $organizationaldata->count(); // Call count() directly on the collection
 
-                // dd($organizationalCount,$user->id); // This will show the count of organizational_id value
-        
+
+            // Fetch records where user_id matches the user_id of the found customer
+            $organizationaldata = OrganizationalUser::where('user_id', $user->id) // Use where for a single value
+                ->whereNotNull('organizational_id') // Ensure the organizational_id is not null
+                ->pluck('organizational_id'); // Pluck all organizational_ids
+            $organizationalCount = $organizationaldata->count(); // Call count() directly on the collection
+
+            // dd($organizationalCount,$user->id); // This will show the count of organizational_id value
+
 
 
             $documents = $this->countToolDocument($user->id);

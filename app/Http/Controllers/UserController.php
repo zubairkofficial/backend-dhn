@@ -19,7 +19,6 @@ class UserController extends Controller
 {
     public function register_user(Request $request)
     {
-
         // Validate the incoming request
         $request->validate([
             'name' => 'required',
@@ -46,11 +45,13 @@ class UserController extends Controller
             'creator_id.exists' => 'Der Ersteller muss ein gültiger Benutzer sein.',
         ]);
 
-
         $user = new User();
         $user->name = $request->name;
         $user->email = $request->email;
         $user->is_user_customer = $request->is_user_customer;
+        $user->counter_limit = Auth::user()->counter_limit;
+        $user->current_usage = 0;
+        $user->expiration_date = Auth::user()->expiration_date;
         $user->password = Hash::make($request->password);
 
         if ($request->services) {
