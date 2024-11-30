@@ -31,7 +31,7 @@ class ServiceController extends Controller
         }
 
         // If the user is a customer (is_user_customer is 1), allow access without checking counter
-        if ($user->is_user_customer == 1 || $user->user_type == 1) {
+        if ($user->is_user_customer == 1 || $user->is_user_organizational == 1 || $user->user_type == 1) {
             return response()->json(Service::where('status', 1)->get());
         }
 
@@ -39,9 +39,13 @@ class ServiceController extends Controller
         $userCounterLimit = $user->counter_limit ?? 0; // default to 0 if null
 
         // Get the organizational IDs associated with the authenticated user
-        $organizationalUserId = OrganizationalUser::where('organizational_id', Auth::id())
-            ->whereNotNull('user_id')
-            ->first(); // Returns an array of organizational IDs
+        $organizationalUserId = OrganizationalUser::where('user_id', Auth::user()->id)
+            ->first();
+
+        if (!$organizationalUserId) {
+            $organizationalUserId = OrganizationalUser::where('organizational_id', Auth::user()->id)
+                ->first();
+        }
 
         if ($organizationalUserId === null) {
             return response()->json(['status' => 'error', 'message' => 'Organizational user data is missing'], 400);

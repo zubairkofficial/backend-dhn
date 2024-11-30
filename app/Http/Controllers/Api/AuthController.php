@@ -59,9 +59,6 @@ class AuthController extends Controller
         if($request->counterLimit){
             $user->counter_limit =  $request->counterLimit;
         }
-        if($request->currentUsage){
-            $user->current_usage =  $request->currentUsage;
-        }
 
         if ($request->services) {
             $user->services = $request->services;

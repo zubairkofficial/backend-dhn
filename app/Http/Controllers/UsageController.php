@@ -40,9 +40,16 @@ class UsageController extends Controller
         $userCounterLimit = $user->counter_limit ?? 0; // default to 0 if null
 
         // Get the organizational IDs associated with the authenticated user
-        $organizationalUserId = OrganizationalUser::where('organizational_id', Auth::id())
-            ->whereNotNull('user_id')
-            ->first(); // Returns an array of organizational IDs
+        $organizationalUserId = OrganizationalUser::where('user_id', Auth::user()->id)
+            ->first();
+
+        if (!$organizationalUserId) {
+            $organizationalUserId = OrganizationalUser::where('organizational_id', Auth::user()->id)
+                ->first();
+        }
+        if ($organizationalUserId === null) {
+            return response()->json(['status' => 'error', 'message' => 'Organizational user data is missing'], 400);
+        }
 
         $organizationalUserIds = OrganizationalUser::where('user_id', $organizationalUserId->user_id)
             ->whereNotNull('organizational_id')
@@ -56,7 +63,7 @@ class UsageController extends Controller
         // Dynamically determine the usage count based on the model
         switch ($model) {
             case 'Document':
-                $usageCount = Document::whereIn('user_id', $organizationalUserIds)->count() + 20;
+                $usageCount = Document::whereIn('user_id', $organizationalUserIds)->count();
                 break;
 
             case 'ContractSolutions':

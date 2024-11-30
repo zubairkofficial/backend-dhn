@@ -63,7 +63,6 @@ class CustomerUserController extends Controller
 
         $user->expiration_date =  $request->expirationDate;
         $user->counter_limit =  $request->counterLimit;
-        $user->current_usage =  $request->currentUsage;
         // Save the user
         $user->save();
 
@@ -136,7 +135,6 @@ class CustomerUserController extends Controller
         $user->is_user_customer = 0;
         $user->expiration_date =  $request->expirationDate;
         $user->counter_limit =  $request->counterLimit;
-        $user->current_usage =  $request->currentUsage;
 
 
         // Save the user

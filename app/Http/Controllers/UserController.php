@@ -49,9 +49,6 @@ class UserController extends Controller
         $user->name = $request->name;
         $user->email = $request->email;
         $user->is_user_customer = $request->is_user_customer;
-        $user->counter_limit = Auth::user()->counter_limit;
-        $user->current_usage = 0;
-        $user->expiration_date = Auth::user()->expiration_date;
         $user->password = Hash::make($request->password);
 
         if ($request->services) {
@@ -60,6 +57,12 @@ class UserController extends Controller
 
         if ($request->org_id) {
             $user->org_id = $request->org_id;
+        }
+        if($request->expirationDate){
+            $user->expiration_date =  $request->expirationDate;
+        }
+        if($request->counterLimit){
+            $user->counter_limit =  $request->counterLimit;
         }
 
         // Set the is_user_organizational flag

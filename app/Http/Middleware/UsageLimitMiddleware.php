@@ -33,7 +33,7 @@ class UsageLimitMiddleware
         }
 
         // If the user is a customer (is_user_customer is 1), allow access without checking counter
-        if ($user->is_user_customer == 1) {
+        if ($user->is_user_customer == 1 || $user->user_type == 1) {
             return $next($request); // Skip the counter checks and allow the request to continue
         }
 
@@ -41,11 +41,13 @@ class UsageLimitMiddleware
         $userCounterLimit = $user->counter_limit ?? 0; // default to 0 if null
 
         // Get the organizational IDs associated with the authenticated user
-        $organizationalUserId = OrganizationalUser::where('organizational_id', Auth::id())
-            ->whereNotNull('user_id')
-            ->first(); // Returns the first match with the organizational_id
+        $organizationalUserId = OrganizationalUser::where('user_id', Auth::user()->id)
+            ->first();
 
-        // Check if we found the organizational data
+        if (!$organizationalUserId) {
+            $organizationalUserId = OrganizationalUser::where('organizational_id', Auth::user()->id)
+                ->first();
+        }
         if (!$organizationalUserId) {
             return response()->json(['status' => 'error', 'message' => 'No valid organizational data found'], 400);
         }
