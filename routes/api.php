@@ -56,7 +56,7 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::get('/getUserData', [AuthController::class, 'getUserData']);
     Route::get('/getNonOrganizationalUsers', [AuthController::class, 'getNonOrganizationalUsers']);
     Route::get('dashboardInfo', [AdminController::class, 'dashboardInfo']);
-
+    Route::post('/reset-user-password/{id}', [AuthController::class, 'resetUserPassword']);
     // Route::get('/customer-requests', [CustomerRequestController::class, 'getRequests']);
     // Route::post('/customer-requests/{id}/approve', [CustomerRequestController::class, 'approveRequest']);
     // Route::post('/customer-requests/{id}/decline', [CustomerRequestController::class, 'declineRequest']);
@@ -121,8 +121,13 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
 
     Route::post('/addOrganizationalUser', [UserController::class, 'addOrganizationalUser']);
     Route::post('/register_user', [UserController::class, 'register_user']);
+    Route::get('/user/{id}', [UserController::class, 'getUserById']);
+
+    Route::put('/update_user/{id}', [UserController::class, 'update_user']);
+
     Route::get('/getOrganizationUsers', action: [UserController::class, 'getOrganizationUsers']);
     Route::delete('/delete_User/{id}', [UserController::class, 'delete_User']);
+
     Route::get('/getAllOrganizationalUsers', [AuthController::class, 'getAllOrganizationalUsers']);
     Route::get('/getOrganizationUsers2/{id}', action: [UserController::class, 'getOrganizationUsers2']);
 

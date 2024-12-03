@@ -25,7 +25,7 @@ class AuthController extends Controller
 {
     public function register(Request $request)
     {
-        // return $request->all();
+        // dd($request->all());
         $request->validate([
             'name' => 'required',
             'email' => 'required|email|unique:users',
@@ -53,13 +53,13 @@ class AuthController extends Controller
         $user->name = $request->name;
         $user->email = $request->email;
         $user->password = Hash::make($request->password);
-        if($request->expirationDate){
-            $user->expiration_date =  $request->expirationDate;
-        }
-        if($request->counterLimit){
+
+        if ($request->counterLimit) {
             $user->counter_limit =  $request->counterLimit;
         }
-
+        if ($request->expirationDate) {
+            $user->expiration_date =  $request->expirationDate;
+        }
         if ($request->services) {
             $user->services = $request->services;
         }
@@ -220,7 +220,7 @@ class AuthController extends Controller
         $organizationUser->is_user_customer = 0;
         $organizationUser->password = Hash::make($request->password);
         $organizationUser->services = $request->services;
-
+        $organizationUser->counter_limit = $customerUser->counter_limit;
         if ($request->org_id) {
             $organizationUser->org_id = $request->org_id;
         }
@@ -721,5 +721,23 @@ class AuthController extends Controller
         return response()->json([
             'organization_users' => $usersWithServiceNames,
         ], 200);
+    }
+
+    // by shoaib
+    public function resetUserPassword(Request $request, $id)
+    {
+        $request->validate([
+            'password' => 'required|string|min:8|confirmed', // Ensure password confirmation
+        ]);
+
+        // Find the user by ID
+        $user = User::findOrFail($id);
+        // dd($user);
+
+        // Update the user's password
+        $user->password = Hash::make($request->password);
+        $user->save();
+
+        return response()->json(['message' => 'Password reset successfully.']);
     }
 }

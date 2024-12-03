@@ -70,9 +70,7 @@ class CustomerUserController extends Controller
         OrganizationalUser::create([
             'customer_id' => $request->creator_id, // Ensure this is the correct ID
             'organizational_id' => $user->id,
-
             'user_id' => $request->orgi_id
-            // The ID of the new user
         ]);
 
         // Create a token for the new user
@@ -97,7 +95,7 @@ class CustomerUserController extends Controller
             'services' => 'nullable|array',
             'is_user_organizational' => 'nullable|boolean',
             'counterLimit' => 'required|numeric',
-            'currentUsage' => 'required|numeric',
+            // 'currentUsage' => 'required|numeric',
             'expirationDate' => 'required|date'
         ], [
             'name.required' => 'Der Name ist erforderlich.',

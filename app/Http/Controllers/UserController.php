@@ -58,10 +58,10 @@ class UserController extends Controller
         if ($request->org_id) {
             $user->org_id = $request->org_id;
         }
-        if($request->expirationDate){
+        if ($request->expirationDate) {
             $user->expiration_date =  $request->expirationDate;
         }
-        if($request->counterLimit){
+        if ($request->counterLimit) {
             $user->counter_limit =  $request->counterLimit;
         }
 
@@ -91,7 +91,77 @@ class UserController extends Controller
             "token" => $token,
         ], 200);
     }
+    public function getUserById($id)
+    {
+        // Find the user by ID
+        $user = User::findOrFail($id);
 
+        // Return user data
+        return response()->json([
+            'user' => $user,
+        ], 200);
+    }
+
+    public function update_user(Request $request, $id)
+    {
+        // Validate the request
+        $request->validate([
+            'name' => 'required',
+            'email' => 'required|email|unique:users,email,' . $id, // Allow the same email
+            'password' => 'nullable|min:8',
+            'services' => 'nullable|array',
+            'is_user_organizational' => 'nullable|boolean',
+            'is_user_customer' => 'nullable|boolean',
+
+        ]);
+
+        // Find the user to update
+        $user = User::findOrFail($id);
+
+        // Update fields
+        $user->name = $request->name;
+        $user->email = $request->email;
+
+        if ($request->password) {
+            $user->password = Hash::make($request->password);
+        }
+
+        // Only update counter_limit and expiration_date if provided
+        if ($request->counterLimit) {
+            $user->counter_limit = $request->counterLimit;
+        }
+
+        if ($request->expirationDate) {
+            $user->expiration_date = $request->expirationDate;
+        }
+
+        // Update other fields
+        $user->is_user_customer = $request->is_user_customer;
+        $user->is_user_organizational = $request->is_user_organizational;
+        $user->services = $request->services ?? $user->services;
+
+        // Save updated user
+        $user->save();
+
+        return response()->json([
+            "message" => "User updated successfully.",
+            "user" => $user,
+        ], 200);
+    }
+
+
+    // public function delete_user($id)
+    // {
+    //     // Find the user by ID
+    //     $user = User::findOrFail($id);
+
+    //     // You can add checks to delete related data if necessary (e.g., in OrganizationalUser)
+    //     $user->delete();
+
+    //     return response()->json([
+    //         "message" => "User deleted successfully.",
+    //     ], 200);
+    // }
     public function registerUserByCustomer(Request $request)
     {
         $request->validate([
