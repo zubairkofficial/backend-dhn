@@ -157,11 +157,13 @@ class CustomerUserController extends Controller
 
     public function updateCustomerUser(Request $request, $id)
     {
+        // dd($request->all());
         $user = User::find($id);
+
         if (!$user) {
             return response()->json(['status' => 'error', 'message' => 'User not found'], 404);
         }
-    
+
         // Validation for inputs
         $request->validate([
             'name' => 'required|string|max:255',
@@ -170,14 +172,14 @@ class CustomerUserController extends Controller
             'services.*' => 'exists:services,id',
             'counterLimit' => 'required|integer|min:1',
             'expirationDate' => 'required|date|after:today',
-        ],[
+        ], [
             'name.required' => 'Der Name ist erforderlich.',
             'email.required' => 'Die E-Mail-Adresse ist erforderlich.',
             'email.email' => 'Bitte geben Sie eine gültige E-Mail-Adresse ein.',
             'email.unique' => 'Diese E-Mail-Adresse wird bereits verwendet.',
             'services.array' => 'Die Dienste müssen ein Array sein.'
         ]);
-    
+
         $user->name = $request->name;
         $user->email = $request->email;
         if ($request->org_id) {
@@ -186,14 +188,44 @@ class CustomerUserController extends Controller
 
         if ($request->services) {
             $user->services = $request->services;
-        }// Assuming services is an array of IDs
+        } // Assuming services is an array of IDs
         $user->counter_limit = $request->counterLimit;
         $user->expiration_date = $request->expirationDate;
-    
-        if ($user->save()) {
+        $userData = $user->save();
+        if ($request->counterLimit || $request->expirationDate) {
+            $orgUsers = OrganizationalUser::where('user_id', $id)->get();
+
+            // Check if organizational users exist
+            if ($orgUsers->isEmpty()) {
+                return response()->json(['message' => 'No organizational users found for the given user ID'], 404);
+            }
+
+            // Extract organizational IDs
+            $organizationalIds = $orgUsers->pluck('organizational_id')->filter();
+
+            if ($organizationalIds->isEmpty()) {
+                return response()->json(['message' => 'No valid organizational IDs found'], 404);
+            }
+
+            // Fetch related users from the users table
+            $users = User::whereIn('id', $organizationalIds)->get();
+
+            // Update counter_limit and expiration_date
+            foreach ($users as $user) {
+                if ($request->has('counterLimit')) {
+                    $user->counter_limit = $request->counterLimit;
+                }
+                if ($request->has('expirationDate')) {
+                    $user->expiration_date = $request->expirationDate;
+                }
+                $user->save();
+            }
+        }
+
+        if ($userData) {
             return response()->json(['status' => 'success', 'message' => 'User updated successfully']);
         }
-    
+
         return response()->json(['status' => 'error', 'message' => 'Failed to update user'], 500);
     }
     public function getOrganizationUsersForCustomer(Request $request)
