@@ -114,6 +114,10 @@ class AuthController extends Controller
             ->where(['is_user_customer' => 1, 'org_id' => null])
             ->first();
 
+
+        $organizationalUser = User::find($firstCustomerAdmin->customerUserWithNullOrganization->user_id);
+        
+
         if (!isset($firstCustomerAdmin)) {
             return response()->json(['error' => 'Something went wrong'], 500);
         }
@@ -130,9 +134,11 @@ class AuthController extends Controller
 
         $user->services = $services; // Assign updated services array
 
-        $user->org_id = $user100->org_id;
+        $user->org_id = $organizationalUser->org_id;
         $user->is_user_organizational = 0;
         $user->password = Hash::make($request->password);
+        $user->counter_limit = $organizationalUser->counter_limit;
+        $user->expiration_date = $organizationalUser->expiration_date;
 
         $user->save();
 
