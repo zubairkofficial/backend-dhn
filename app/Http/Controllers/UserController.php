@@ -19,6 +19,7 @@ class UserController extends Controller
 {
     public function register_user(Request $request)
     {
+        // dd($request->all());
         // Validate the incoming request
         $request->validate([
             'name' => 'required',
@@ -63,6 +64,13 @@ class UserController extends Controller
         }
         if ($request->counterLimit) {
             $user->counter_limit =  $request->counterLimit;
+        }
+
+        // Check if counterLimit is 'super-admin'
+        if ($request->input('counterLimit') === "super-admin") {
+            $userData = User::findOrFail($request->creator_id);
+            $user->counter_limit = $userData->counter_limit;
+            $user->expiration_date = $userData->expiration_date;
         }
 
         // Set the is_user_organizational flag
