@@ -113,6 +113,7 @@ class UserController extends Controller
     public function update_user(Request $request, $id)
     {
         // Validate the request
+     
         $request->validate([
             'name' => 'required',
             'email' => 'required|email|unique:users,email,' . $id, // Allow the same email
@@ -147,6 +148,20 @@ class UserController extends Controller
         $user->is_user_customer = $request->is_user_customer;
         $user->is_user_organizational = $request->is_user_organizational;
         $user->services = $request->services ?? $user->services;
+        // if($user->user_register_type === "out"){
+        //     $user->user_register_type = "in";
+        // }
+        if ($user->user_register_type === "out") {
+            $user->user_register_type = "in";
+            $firstCustomerAdmin = User::with('customerUserWithNullOrganization')
+                ->has('customerUserWithNullOrganization')
+                ->where(['is_user_customer' => 1, 'org_id' => null])
+                ->first();
+
+
+            $organizationalUser = User::find($firstCustomerAdmin->customerUserWithNullOrganization->user_id);
+            $user->counter_limit = $organizationalUser->counter_limit;
+        }
 
         // Save updated user
         $user->save();

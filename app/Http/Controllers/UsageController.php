@@ -36,69 +36,113 @@ class UsageController extends Controller
             return response()->json(['status' => 'success', 'message' => 'Applicable'], 200);
         }
 
-        // Get the user's counter limit (ensure it's a valid number)
-        $userCounterLimit = $user->counter_limit ?? 0; // default to 0 if null
+        // yaha sy shru kro
+        if ($user->user_register_type == "out") {
 
-        // Get the organizational IDs associated with the authenticated user
-        $organizationalUserId = OrganizationalUser::where('user_id', Auth::user()->id)
-            ->first();
+            switch ($model) {
+                case 'Document':
+                    $usageCount = Document::where('user_id', $user->id)->count();
+                    break;
 
-        if (!$organizationalUserId) {
-            $organizationalUserId = OrganizationalUser::where('organizational_id', Auth::user()->id)
-                ->first();
-        }
-        if ($organizationalUserId === null) {
-            return response()->json(['status' => 'error', 'message' => 'Organizational user data is missing'], 400);
-        }
+                case 'ContractSolutions':
+                    $usageCount = ContractSolutions::where('user_id', $user->id)->count();
+                    break;
 
-        $organizationalUserIds = OrganizationalUser::where('user_id', $organizationalUserId->user_id)
-            ->whereNotNull('organizational_id')
-            ->pluck('organizational_id'); // Returns an array of organizational IDs
+                case 'DataProcess':
+                    $usageCount = DataProcess::where('user_id', $user->id)->count();
+                    break;
 
-        if ($organizationalUserIds->isEmpty()) {
-            // If there are no valid organizational IDs, return a specific message
-            return response()->json(['status' => 'error', 'message' => 'No valid organizational data found'], 400);
-        }
+                case 'FreeDataProcess':
+                    $usageCount = FreeDataProcess::where('user_id', $user->id)->count();
+                    break;
 
-        // Dynamically determine the usage count based on the model
-        switch ($model) {
-            case 'Document':
-                $usageCount = Document::whereIn('user_id', $organizationalUserIds)->count();
-                break;
+                default:
+                    return response()->json(['status' => 'error', 'message' => 'Invalid model specified'], 400);
+            }
 
-            case 'ContractSolutions':
-                $usageCount = ContractSolutions::whereIn('user_id', $organizationalUserIds)->count();
-                break;
+            // Calculate the remaining available count (usage count left)
+            $userCounterLimit = $user->counter_limit ?? 0;
 
-            case 'DataProcess':
-                $usageCount = DataProcess::whereIn('user_id', $organizationalUserIds)->count();
-                break;
+            $availableCount = max(0, $userCounterLimit - $usageCount);
+            // If the usage count exceeds the user's counter limit, return an error
+            if ($usageCount >= $userCounterLimit) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Usage limit exceeded',
+                    'available_count' => $availableCount,
+                ], 403);
+            }
 
-            case 'FreeDataProcess':
-                $usageCount = FreeDataProcess::whereIn('user_id', $organizationalUserIds)->count();
-                break;
-
-            default:
-                return response()->json(['status' => 'error', 'message' => 'Invalid model specified'], 400);
-        }
-
-        // Calculate the remaining available count (usage count left)
-        $availableCount = max(0, $userCounterLimit - $usageCount);
-
-        // If the usage count exceeds the user's counter limit, return an error
-        if ($usageCount >= $userCounterLimit) {
             return response()->json([
-                'status' => 'error',
-                'message' => 'Usage limit exceeded',
-                'available_count' => $availableCount,
-            ], 403);
-        }
+                'status' => 'success',
+                'message' => 'Applicable',
+                'available_count' => $availableCount, // Return available count
+            ], 200);
+        } else {
+            // Get the user's counter limit (ensure it's a valid number)
+            $userCounterLimit = $user->counter_limit ?? 0; // default to 0 if null
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Applicable',
-            'available_count' => $availableCount, // Return available count
-        ], 200);
+            // Get the organizational IDs associated with the authenticated user
+            $organizationalUserId = OrganizationalUser::where('user_id', Auth::user()->id)
+                ->first();
+
+            if (!$organizationalUserId) {
+                $organizationalUserId = OrganizationalUser::where('organizational_id', Auth::user()->id)
+                    ->first();
+            }
+            if ($organizationalUserId === null) {
+                return response()->json(['status' => 'error', 'message' => 'Organizational user data is missing'], 400);
+            }
+
+            $organizationalUserIds = OrganizationalUser::where('user_id', $organizationalUserId->user_id)
+                ->whereNotNull('organizational_id')
+                ->pluck('organizational_id'); // Returns an array of organizational IDs
+
+            if ($organizationalUserIds->isEmpty()) {
+                // If there are no valid organizational IDs, return a specific message
+                return response()->json(['status' => 'error', 'message' => 'No valid organizational data found'], 400);
+            }
+
+            // Dynamically determine the usage count based on the model
+            switch ($model) {
+                case 'Document':
+                    $usageCount = Document::whereIn('user_id', $organizationalUserIds)->count();
+                    break;
+
+                case 'ContractSolutions':
+                    $usageCount = ContractSolutions::whereIn('user_id', $organizationalUserIds)->count();
+                    break;
+
+                case 'DataProcess':
+                    $usageCount = DataProcess::whereIn('user_id', $organizationalUserIds)->count();
+                    break;
+
+                case 'FreeDataProcess':
+                    $usageCount = FreeDataProcess::whereIn('user_id', $organizationalUserIds)->count();
+                    break;
+
+                default:
+                    return response()->json(['status' => 'error', 'message' => 'Invalid model specified'], 400);
+            }
+
+            // Calculate the remaining available count (usage count left)
+            $availableCount = max(0, $userCounterLimit - $usageCount);
+
+            // If the usage count exceeds the user's counter limit, return an error
+            if ($usageCount >= $userCounterLimit) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Usage limit exceeded',
+                    'available_count' => $availableCount,
+                ], 403);
+            }
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Applicable',
+                'available_count' => $availableCount, // Return available count
+            ], 200);
+        }
     }
 
     public function getServiceAvailability(Request $request)

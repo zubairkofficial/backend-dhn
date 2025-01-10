@@ -21,6 +21,8 @@ use Illuminate\Support\Facades\Hash;
 use App\Models\OrganizationalUser;
 use Illuminate\Support\Facades\Mail;
 
+use function Pest\Laravel\json;
+
 class AuthController extends Controller
 {
     public function register(Request $request)
@@ -116,7 +118,7 @@ class AuthController extends Controller
 
 
         $organizationalUser = User::find($firstCustomerAdmin->customerUserWithNullOrganization->user_id);
-        
+
 
         if (!isset($firstCustomerAdmin)) {
             return response()->json(['error' => 'Something went wrong'], 500);
@@ -136,10 +138,13 @@ class AuthController extends Controller
 
         $user->org_id = $organizationalUser->org_id;
         $user->is_user_organizational = 0;
-        $user->password = Hash::make($request->password);
-        $user->counter_limit = $organizationalUser->counter_limit;
-        $user->expiration_date = $organizationalUser->expiration_date;
 
+
+        $user->password = Hash::make($request->password);
+        // $user->counter_limit = $organizationalUser->counter_limit;
+        $user->counter_limit = 3;
+        $user->expiration_date = $organizationalUser->expiration_date;
+        $user->user_register_type = "out";
         $user->save();
 
         // Save the creator and new user in OrganizationalUser
@@ -377,6 +382,7 @@ class AuthController extends Controller
 
     public function updateUser(Request $request, $id)
     {
+        // return response()->json(['data', $id]);
         $request->validate([
             'services' => 'sometimes|array',
             'email' => 'required|email|unique:users,email,' . $id
@@ -405,7 +411,17 @@ class AuthController extends Controller
         if ($request->has('org_id')) {
             $user->org_id = $request->org_id;
         }
+        if ($user->user_register_type === "out") {
+            $user->user_register_type = "in";
+            $firstCustomerAdmin = User::with('customerUserWithNullOrganization')
+                ->has('customerUserWithNullOrganization')
+                ->where(['is_user_customer' => 1, 'org_id' => null])
+                ->first();
 
+
+            $organizationalUser = User::find($firstCustomerAdmin->customerUserWithNullOrganization->user_id);
+            $user->counter_limit = $organizationalUser->counter_limit;
+        }
         $user->save();
 
         // Fetch the IDs of the child organizational users (user_id and organizational_id)

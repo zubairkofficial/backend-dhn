@@ -25,7 +25,8 @@ class User extends Authenticatable
         'services',
         'org_id',
         'is_user_organizational',
-        'is_user_customer'
+        'is_user_customer',
+        'user_register_type',
     ];
 
     protected $with = ['organization'];

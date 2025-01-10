@@ -35,61 +35,91 @@ class ServiceController extends Controller
             return response()->json(Service::where('status', 1)->get());
         }
 
-        // Get the user's counter limit (ensure it's a valid number)
-        $userCounterLimit = $user->counter_limit ?? 0; // default to 0 if null
+        if ($user->user_register_type == "out") {
+            $userCounterLimit = $user->counter_limit ?? 0;
+            $services = [
+                'fileupload' => Document::class,
+                'contract_automation_solution' => ContractSolutions::class,
+                'data_process' => DataProcess::class,
+                'free-data-process' => FreeDataProcess::class,
+            ];
+            $updatedServices = Service::where('status', 1)->get()->map(function ($service) use ($services, $user) {
+                // Get the model class associated with the current service
+                $modelClass = $services[$service->link] ?? null;
 
-        // Get the organizational IDs associated with the authenticated user
-        $organizationalUserId = OrganizationalUser::where('user_id', Auth::user()->id)
-            ->first();
+                if ($modelClass) {
+                    // Get the count of related data
+                    $dataCount = $modelClass::where('user_id', $user->id)->count();  // Use count to get the number of records in the related table
 
-        if (!$organizationalUserId) {
-            $organizationalUserId = OrganizationalUser::where('organizational_id', Auth::user()->id)
-                ->first();
-        }
-
-        if ($organizationalUserId === null) {
-            return response()->json(['status' => 'error', 'message' => 'Organizational user data is missing'], 400);
-        }
-
-        $organizationalUserIds = OrganizationalUser::where('user_id', $organizationalUserId->user_id)
-            ->whereNotNull('organizational_id')
-            ->pluck('organizational_id'); // Returns an array of organizational IDs
-
-        if ($organizationalUserIds->isEmpty()) {
-            // If there are no valid organizational IDs, return a specific message
-            return response()->json(['status' => 'error', 'message' => 'No valid organizational data found'], 400);
-        }
-
-
-        // Define the list of services with their associated models
-        $services = [
-            'fileupload' => Document::class,
-            'contract_automation_solution' => ContractSolutions::class,
-            'data_process' => DataProcess::class,
-            'free-data-process' => FreeDataProcess::class,
-        ];
-
-        // Loop through each service and check the count of the related models
-        $updatedServices = Service::where('status', 1)->get()->map(function ($service) use ($services, $user, $organizationalUserIds, $userCounterLimit) {
-            // Get the model class associated with the current service
-            $modelClass = $services[$service->link] ?? null;
-
-            if ($modelClass) {
-                // Get the count of related data
-                $dataCount = $modelClass::whereIn('user_id', $organizationalUserIds)->count();  // Use count to get the number of records in the related table
-                $availableCount = max(0, $userCounterLimit - $dataCount);
-
-                // If the usage count exceeds the user's counter limit, return an error
-                if ($availableCount <= 0 || ($user->expiration_date && $user->expiration_date < now())) {
-                    $service->status = 0;
+                    // If the usage count exceeds the user's counter limit, return an error
+                    if ($dataCount >= 3 || ($user->expiration_date && $user->expiration_date < now())) {
+                        $service->status = 0;
+                    }
                 }
+
+                return $service;
+            });
+            return response()->json($updatedServices);
+
+            // return response()->json(Service::where('status', 1)->get());
+        } else {
+
+            // Get the user's counter limit (ensure it's a valid number)
+            $userCounterLimit = $user->counter_limit ?? 0; // default to 0 if null
+
+            // Get the organizational IDs associated with the authenticated user
+            $organizationalUserId = OrganizationalUser::where('user_id', Auth::user()->id)
+                ->first();
+
+            if (!$organizationalUserId) {
+                $organizationalUserId = OrganizationalUser::where('organizational_id', Auth::user()->id)
+                    ->first();
             }
 
-            return $service;
-        });
+            if ($organizationalUserId === null) {
+                return response()->json(['status' => 'error', 'message' => 'Organizational user data is missing'], 400);
+            }
 
-        // Return the updated services
-        return response()->json($updatedServices);
+            $organizationalUserIds = OrganizationalUser::where('user_id', $organizationalUserId->user_id)
+                ->whereNotNull('organizational_id')
+                ->pluck('organizational_id'); // Returns an array of organizational IDs
+
+            if ($organizationalUserIds->isEmpty()) {
+                // If there are no valid organizational IDs, return a specific message
+                return response()->json(['status' => 'error', 'message' => 'No valid organizational data found'], 400);
+            }
+
+
+            // Define the list of services with their associated models
+            $services = [
+                'fileupload' => Document::class,
+                'contract_automation_solution' => ContractSolutions::class,
+                'data_process' => DataProcess::class,
+                'free-data-process' => FreeDataProcess::class,
+            ];
+
+            // Loop through each service and check the count of the related models
+            $updatedServices = Service::where('status', 1)->get()->map(function ($service) use ($services, $user, $organizationalUserIds, $userCounterLimit) {
+                // Get the model class associated with the current service
+                $modelClass = $services[$service->link] ?? null;
+
+                if ($modelClass) {
+                    // Get the count of related data
+                    $dataCount = $modelClass::whereIn('user_id', $organizationalUserIds)->count();  // Use count to get the number of records in the related table
+                    $availableCount = max(0, $userCounterLimit - $dataCount);
+
+                    // If the usage count exceeds the user's counter limit, return an error
+                    if ($availableCount <= 0 || ($user->expiration_date && $user->expiration_date < now())) {
+                        $service->status = 0;
+                    }
+                }
+
+                return $service;
+            });
+
+            // Return the updated services
+            return response()->json($updatedServices);
+        }
     }
 
 
