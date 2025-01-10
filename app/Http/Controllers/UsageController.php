@@ -69,6 +69,7 @@ class UsageController extends Controller
                 return response()->json([
                     'status' => 'error',
                     'message' => 'Usage limit exceeded',
+                    'userCounterLimit' => $userCounterLimit,
                     'available_count' => $availableCount,
                 ], 403);
             }
@@ -76,6 +77,7 @@ class UsageController extends Controller
             return response()->json([
                 'status' => 'success',
                 'message' => 'Applicable',
+                'userCounterLimit' => $userCounterLimit,
                 'available_count' => $availableCount, // Return available count
             ], 200);
         } else {
@@ -133,6 +135,7 @@ class UsageController extends Controller
                 return response()->json([
                     'status' => 'error',
                     'message' => 'Usage limit exceeded',
+                    'userCounterLimit' => $userCounterLimit,
                     'available_count' => $availableCount,
                 ], 403);
             }
@@ -140,6 +143,7 @@ class UsageController extends Controller
             return response()->json([
                 'status' => 'success',
                 'message' => 'Applicable',
+                'userCounterLimit' => $userCounterLimit,
                 'available_count' => $availableCount, // Return available count
             ], 200);
         }

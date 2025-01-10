@@ -10,6 +10,9 @@ use Illuminate\Support\Facades\Log;
 use PhpOffice\PhpWord\PhpWord;
 use PhpOffice\PhpWord\IOFactory;
 use App\Models\ContractSolutions;
+use App\Services\CalculateUsage;
+use App\Services\SendNotifyMail;
+use Illuminate\Support\Facades\Auth;
 
 class ContractAutomationSolutionController extends Controller
 {
@@ -23,6 +26,18 @@ class ContractAutomationSolutionController extends Controller
             'document' => 'required|file',
             'doctype' => 'required|string',
         ]);
+
+        $calculateUsage = new CalculateUsage();
+        $usage = $calculateUsage->calculateUsage(ContractSolutions::class);
+        $status = $usage['status'];
+        $details['userCounterLimit'] = $usage['userCounterLimit'];
+        $details['usageCount'] =$usage['usageCount'];
+        $details['serviceName'] = $usage['serviceName'];
+        $user = Auth::user();
+        if ($status) {
+            $sendNofication = new SendNotifyMail();
+            $sendNofication->sendMail($user->email ,$details);
+        }
 
         $file = $request->file('document');
         $doctype = $validated['doctype'];
