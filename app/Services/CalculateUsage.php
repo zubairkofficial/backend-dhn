@@ -42,7 +42,6 @@ class CalculateUsage
 
         // Calculate usage count
         $usageCount = 0;
-          Log::info([$model]);
         if ($user->user_register_type === "in") {
             $usageCount = $model::where('user_id', $user->id)->count();
 
