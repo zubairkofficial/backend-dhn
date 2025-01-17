@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\CloneDataProcess;
 use App\Models\ContractSolutions;
 use App\Models\DataProcess;
 use App\Models\Document;
@@ -431,9 +432,10 @@ class UserController extends Controller
         $documentsCount = Document::where('user_id', $userId)->count();
         $contractSolutionCount = ContractSolutions::where('user_id', $userId)->count();
         $freeDataProcessCount = FreeDataProcess::where('user_id', $userId)->count();
+        $cloneDataProcessCount = CloneDataProcess::where('user_id', $userId)->count();
 
         // Calculate the total count
-        $allCount = $dataProcessCount + $documentsCount + $contractSolutionCount + $freeDataProcessCount;
+        $allCount = $dataProcessCount + $documentsCount + $contractSolutionCount + $freeDataProcessCount + $cloneDataProcessCount;
 
         // Return counts as an array
         return [
@@ -441,6 +443,7 @@ class UserController extends Controller
             'documentsCount' => $documentsCount,
             'contractSolutionCount' => $contractSolutionCount,
             'freeDataProcessCount' => $freeDataProcessCount,
+            'cloneDataProcessCount' => $cloneDataProcessCount,
             'allCount' => $allCount,
         ];
     }

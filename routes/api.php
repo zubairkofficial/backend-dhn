@@ -4,13 +4,13 @@ use App\Http\Controllers\Api\FreeDataProcessController;
 use App\Http\Controllers\CustomerRequestController;
 use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\CloneDataProcessController;
 use App\Http\Controllers\Api\ServiceController;
 use App\Http\Controllers\Api\OrganizationController;
 use App\Http\Controllers\Api\TranslationController;
 use App\Http\Controllers\Api\FileController;
 use App\Http\Controllers\Api\ContractAutomationSolutionController;
 use App\Http\Controllers\Api\DataProcessController;
-use App\Http\Controllers\Api\GPTModelController;
 use App\Http\Controllers\Api\InstructionController;
 use App\Http\Controllers\Api\InvoiceController;
 use App\Http\Controllers\Api\SettingController;
@@ -20,7 +20,6 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\UsageController;
 use App\Http\Controllers\CustomerAdminController;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\ApiKeyController;
 use App\Http\Middleware\UsageLimitMiddleware;
 
 // Auth Routes
@@ -109,6 +108,7 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     });
 
     // DataProcess
+    Route::post('/clone-data-process', [CloneDataProcessController::class, 'fetchDataProcess']);
     Route::post('/data-process', [DataProcessController::class, 'fetchDataProcess']);
     Route::post('/send-processed-file', [DataProcessController::class, 'sendProcessedFile']);
     Route::post('/freeDataProcess', [FreeDataProcessController::class, 'fetchFreeDataProcess']);

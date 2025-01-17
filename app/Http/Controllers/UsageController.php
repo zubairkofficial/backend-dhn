@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Document;
 use App\Models\User;
 use App\Models\DataProcess;
+use App\Models\CloneDataProcess;
 use App\Models\ContractSolutions; // Assuming the model name is ContractSolution
 use App\Models\FreeDataProcess;
 use App\Models\OrganizationalUser;
@@ -54,6 +55,10 @@ class UsageController extends Controller
 
                 case 'FreeDataProcess':
                     $usageCount = FreeDataProcess::where('user_id', $user->id)->count();
+                    break;
+
+                case 'CloneDataProcess':
+                    $usageCount = CloneDataProcess::where('user_id', $user->id)->count();
                     break;
 
                 default:
@@ -123,6 +128,10 @@ class UsageController extends Controller
                     $usageCount = FreeDataProcess::whereIn('user_id', $organizationalUserIds)->count();
                     break;
 
+                case 'CloneDataProcess':
+                    $usageCount = CloneDataProcess::whereIn('user_id', $organizationalUserIds)->count();
+                    break;
+
                 default:
                     return response()->json(['status' => 'error', 'message' => 'Invalid model specified'], 400);
             }
@@ -164,6 +173,7 @@ class UsageController extends Controller
             'ContractSolutions' => ContractSolutions::class,
             'DataProcess' => DataProcess::class,
             'FreeDataProcess' => FreeDataProcess::class,
+            'CloneDataProcess' => CloneDataProcess::class,
         ];
 
         $availability = [];
@@ -222,12 +232,19 @@ class UsageController extends Controller
             $dataProcessCount = $user->dataprocesses()->count();
             $responseData['data_process_count'] = $dataProcessCount;
         }
-
+        
         // Check if the user has access to the data process tool
         if (in_array('5', $userServices)) {
             // Count the data processes associated with the user
             $freeDataProcessCount = $user->freedataprocesses()->count();
             $responseData['free_data_process_count'] = $freeDataProcessCount;
+        }
+        
+        // Check if the user has access to the data process tool
+        if (in_array('5', $userServices)) {
+            // Count the data processes associated with the user
+            $CloneDataProcessCount = $user->clonedataprocesses()->count();
+            $responseData['clone_process_count'] = $CloneDataProcessCount;
         }
 
         // Return the filtered usage data based on available tools

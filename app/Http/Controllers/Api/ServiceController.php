@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\CloneDataProcess;
 use App\Models\ContractSolutions;
 use App\Models\DataProcess;
 use App\Models\Document;
@@ -11,7 +12,6 @@ use App\Models\OrganizationalUser;
 use Illuminate\Http\Request;
 use App\Models\Service;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
 
 class ServiceController extends Controller
 {
@@ -40,6 +40,7 @@ class ServiceController extends Controller
             $services = [
                 'fileupload' => Document::class,
                 'contract_automation_solution' => ContractSolutions::class,
+                'clone_data_process' => CloneDataProcess::class,
                 'data_process' => DataProcess::class,
                 'free-data-process' => FreeDataProcess::class,
             ];
@@ -95,6 +96,7 @@ class ServiceController extends Controller
                 'fileupload' => Document::class,
                 'contract_automation_solution' => ContractSolutions::class,
                 'data_process' => DataProcess::class,
+                'clone_data_process' => CloneDataProcess::class,
                 'free-data-process' => FreeDataProcess::class,
             ];
 

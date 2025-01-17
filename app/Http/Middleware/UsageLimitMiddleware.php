@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\CloneDataProcess;
 use App\Models\ContractSolutions;
 use App\Models\DataProcess;
 use App\Models\Document;
@@ -77,6 +78,10 @@ class UsageLimitMiddleware
 
             case 'FreeDataProcess':
                 $usageCount = FreeDataProcess::whereIn('user_id', $organizationalUserIds)->count();
+                break;
+
+            case 'CloneDataProcess':
+                $usageCount = CloneDataProcess::whereIn('user_id', $organizationalUserIds)->count();
                 break;
 
             default:

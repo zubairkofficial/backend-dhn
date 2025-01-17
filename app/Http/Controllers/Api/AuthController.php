@@ -4,19 +4,13 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Mail\WelcomeEmail;
-use App\Models\ContractSolutions;
 use App\Models\CustomerAdmin;
-use App\Models\DataProcess;
-use App\Models\Document;
-use App\Models\FreeDataProcess;
 use App\Models\LogoSetting;
 use App\Models\Organization;
-use App\Models\CustomerRequest;
 use App\Models\Service;
 use App\Models\{User, Translation};
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Hash;
 use App\Models\OrganizationalUser;
 use Illuminate\Support\Facades\Mail;
@@ -731,6 +725,7 @@ class AuthController extends Controller
                 'documentsCount' => $documents['documentsCount'],
                 'contractSolutionCount' => $documents['contractSolutionCount'],
                 'freeDataProcessCount' => $documents['freeDataProcessCount'],
+                'cloneDataProcessCount' => $documents['cloneDataProcessCount'],
                 'allCount' => $documents['allCount'],
                 'organization_name' => $organizationNames->get($user->org_id),
                 'is_user_organizational' => $user->is_user_organizational, // Add this 

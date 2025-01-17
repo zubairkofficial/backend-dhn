@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\CloneDataProcess;
 use App\Models\ContractSolutions;
 use App\Models\DataProcess;
 use App\Models\Document;
@@ -20,13 +21,15 @@ abstract class Controller
         $contractSolutionCount = ContractSolutions::whereIn('user_id', $normalUsers)->count();
 
         $freeDataProcessCount = FreeDataProcess::whereIn('user_id', $normalUsers)->count();
-        $allCount = $dataProcessCount + $documentsCount + $contractSolutionCount + $freeDataProcessCount;
+        $cloneDataProcessCount = CloneDataProcess::whereIn('user_id', $normalUsers)->count();
+        $allCount = $dataProcessCount + $documentsCount + $contractSolutionCount + $freeDataProcessCount + $cloneDataProcessCount;
 
         return [
             'dataProcessCount' => $dataProcessCount,
             'documentsCount' => $documentsCount,
             'contractSolutionCount' => $contractSolutionCount,
             'freeDataProcessCount' => $freeDataProcessCount,
+            'cloneDataProcessCount' => $cloneDataProcessCount,
             'allCount' => $allCount,
         ];
 
@@ -41,13 +44,15 @@ abstract class Controller
         $contractSolutionCount = ContractSolutions::whereIn('user_id', $normalUsers)->count();
 
         $freeDataProcessCount = FreeDataProcess::whereIn('user_id', $normalUsers)->count();
-        $allCount = $dataProcessCount + $documentsCount + $contractSolutionCount + $freeDataProcessCount;
+        $cloneDataProcessCount = CloneDataProcess::whereIn('user_id', $normalUsers)->count();
+        $allCount = $dataProcessCount + $documentsCount + $contractSolutionCount + $freeDataProcessCount + $cloneDataProcessCount;
 
         return [
             'dataProcessCount' => $dataProcessCount,
             'documentsCount' => $documentsCount,
             'contractSolutionCount' => $contractSolutionCount,
             'freeDataProcessCount' => $freeDataProcessCount,
+            'cloneDataProcessCount' => $cloneDataProcessCount,
             'allCount' => $allCount,
         ];
 

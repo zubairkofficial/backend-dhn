@@ -2,13 +2,13 @@
 
 namespace App\Services;
 
+use App\Models\CloneDataProcess;
 use App\Models\Document;
 use App\Models\DataProcess;
 use App\Models\ContractSolutions;
 use App\Models\FreeDataProcess;
 use App\Models\Service;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
 
 class CalculateUsage
 {
@@ -21,6 +21,7 @@ class CalculateUsage
             'fileupload' => Document::class,
             'contract_automation_solution' => ContractSolutions::class,
             'data_process' => DataProcess::class,
+            'clone_data_process' => CloneDataProcess::class,
             'free-data-process' => FreeDataProcess::class,
         ];
 
