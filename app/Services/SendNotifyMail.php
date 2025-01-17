@@ -12,7 +12,7 @@ class SendNotifyMail
     {
         try {
              Mail::to($userEmail)
-                ->bcc('uwe.leven@cretschmar.de')
+                ->bcc('digital-services@cretschmar.de')
                 ->send(new CounterLimitAlertMail($details));
         } catch (\Exception $e) {
             // Log::error('Email sending failed: ' . $e->getMessage());
