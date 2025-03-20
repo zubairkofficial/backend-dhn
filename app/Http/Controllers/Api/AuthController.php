@@ -327,9 +327,7 @@ class AuthController extends Controller
                 "token" => $token,
                 "translationData" => $translations,
             ], 200);
-            // } else {
-            //     return response()->json(["message" => "Your email is not verified."], 422);
-            // }
+          
         } else {
             return response()->json(["message" => "invalid_email_or_password"], 422);
         }
