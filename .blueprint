@@ -1,0 +1,18 @@
+created:
+    - app/Http/Controllers/CategoryController.php
+    - database/factories/CategoryFactory.php
+    - database/factories/ProductFactory.php
+    - database/migrations/2024_05_09_105207_create_categories_table.php
+    - database/migrations/2024_05_09_105208_create_products_table.php
+    - app/Models/Category.php
+    - app/Models/Product.php
+    - tests/Feature/Http/Controllers/CategoryControllerTest.php
+    - app/Http/Requests/CategoryStoreRequest.php
+    - resources/views/category/index.blade.php
+    - resources/views/category/create.blade.php
+updated:
+    - routes/web.php
+models:
+    User: { name: string, email: string, email_verified_at: 'datetime nullable', password: string, remember_token: 'string nullable' }
+    Category: { name: string, slug: 'string unique()', image: text, relationships: { hasMany: Product } }
+    Product: { category_id: unsignedBigInteger, name: string, slug: 'string unique()', price: 'double default(0)', qty: 'integer default(0)', image: text, relationships: { belongsTo: Category } }

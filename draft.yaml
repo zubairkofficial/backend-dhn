@@ -1,0 +1,28 @@
+models:
+  Category:
+    name: string
+    slug: string unique()
+    image: text
+    relationships:
+      hasMany: Product
+  Product:
+    category_id: unsignedBigInteger
+    name: string
+    slug: string unique()
+    price: double default(0)
+    qty: integer default(0)
+    image: text
+    relationships:
+      belongsTo: Category
+
+controllers:
+  Category:
+    index:
+      query: all
+      render: category.index with:categories
+    create:
+      render: category.create
+    store:
+      validate: title, content
+      save: category
+      redirect: category.index
