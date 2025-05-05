@@ -136,7 +136,9 @@ class AuthController extends Controller
 
         $user->password = Hash::make($request->password);
         // $user->counter_limit = $organizationalUser->counter_limit;
-        $user->counter_limit = 3;
+        // $user->counter_limit = 3;
+        $user->counter_limit = 10000;
+
         $user->expiration_date = $organizationalUser->expiration_date;
         $user->user_register_type = "out";
         $user->save();
@@ -327,7 +329,6 @@ class AuthController extends Controller
                 "token" => $token,
                 "translationData" => $translations,
             ], 200);
-          
         } else {
             return response()->json(["message" => "invalid_email_or_password"], 422);
         }
@@ -364,27 +365,31 @@ class AuthController extends Controller
 
 
         if ($user->is_user_organizational === 1 && $user->is_user_customer === 1) {
+
             // $customerId = OrganizationalUser::where('customer_id', $user->id)->pluck('customer_id')->first();
             $customerId = null;
-
-        } elseif ($user->is_user_organizational === 1 && $user->is_user_customer === 0) {
+        } elseif ($user->is_user_organizational === 1 && ($user->is_user_customer === null || $user->is_user_customer === 0)) {
 
             $customerId = OrganizationalUser::where('user_id', $user->id)->pluck('customer_id')->first();
-        } else {
+        } elseif (($user->is_user_organizational === 0 || $user->is_user_organizational === null) && ($user->is_user_customer === null || $user->is_user_customer === 0)) {
+
             $customerId = OrganizationalUser::where('organizational_id', $user->id)->pluck('customer_id')->first();
+        } else {
+            return response()->json(['message' => 'User or child organizational users not found!'], 404);
         }
-        if(!$customerId){
+
+
+        if (!$customerId) {
             $services_ids = Service::all()->keyBy('id');
             $services = Service::all();
-        }
-        else{
+        } else {
             $customer = User::find($customerId);
             $customer_services_ids = $customer->services;
             $services_ids = Service::whereIn('id', $customer_services_ids)->get();
             // Fetch all services once and key by ID for efficient lookups
             $services = Service::whereIn('id', $customer_services_ids)->get();
         }
-       
+
         $orgs = Organization::all();
         if ($user->services) {
             $user->service_names = collect($user->services)->map(function ($serviceId) use ($services_ids) {
