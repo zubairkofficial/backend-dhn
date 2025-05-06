@@ -125,8 +125,8 @@ class AuthController extends Controller
         $user->name = $request->name;
         $user->email = $request->email;
 
-        // Get the existing services from user100 and ensure service ID 5 is added
-        $services[] = 5; // Assuming this is an array
+        // Get the existing services from user100 and ensure service ID 4 is added
+        $services[] = 4; // Assuming this is an array
 
         $user->services = $services; // Assign updated services array
 
@@ -136,8 +136,7 @@ class AuthController extends Controller
 
         $user->password = Hash::make($request->password);
         // $user->counter_limit = $organizationalUser->counter_limit;
-        // $user->counter_limit = 3;
-        $user->counter_limit = 10000;
+        $user->counter_limit = 3;
 
         $user->expiration_date = $organizationalUser->expiration_date;
         $user->user_register_type = "out";
