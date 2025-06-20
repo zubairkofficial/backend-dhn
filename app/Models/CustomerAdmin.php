@@ -9,9 +9,7 @@ class CustomerAdmin extends Model
 {
     use HasFactory;
 
-    protected $fillable = [
-        'user_id',
-    ];
+    protected $fillable = ['user_id',];
 
     /**
      * Get the user that owns the CustomerAdmin.
