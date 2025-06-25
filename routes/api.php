@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\SettingController;
 use App\Http\Controllers\CustomerUserController;
 use App\Http\Controllers\Api\VoiceController;
 use App\Http\Controllers\Api\DownloadLogController;
+use App\Http\Controllers\Api\WerthenbachController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\UsageController;
 use App\Http\Controllers\CustomerAdminController;
@@ -50,7 +51,7 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
 
     Route::post('change-password', [AuthController::class, 'changePassword']);
     Route::get('getuser/{id}', [AuthController::class, 'getuser']);
-    
+
     Route::post('updateUser/{id}', [AuthController::class, 'updateUser']);
     Route::post('logout', [AuthController::class, 'logout']);
     Route::delete('delete/{id}', [AuthController::class, 'delete']);
@@ -170,4 +171,12 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::get('/getInvoiceDataByUploadDate/{date}', [InvoiceController::class, 'getInvoiceDataByUploadDate']);
     Route::get('/deleteInvoiceById/{id}', [InvoiceController::class, 'deleteInvoiceById']);
     Route::delete('/deleteInvoicesByUploadDate/{uploadDate}', [InvoiceController::class, 'deleteInvoicesByUploadDate']);
+
+    Route::post('/fetch-data-werthenbach',[WerthenbachController::class, 'fetchData']);
+    Route::get('/get-user-werthenbach-data', [WerthenbachController::class, 'getUserProcessedData']);
+    Route::get('/get-all-werthenbach-data-customer/{userId}', [WerthenbachController::class, 'getAllProcessedDataByCustomer']);
+    Route::get('/get-all-werthenbach-data-organization/{userId}', [WerthenbachController::class, 'getAllProcessedDataByOrganization']);
+    Route::get('/get-all-werthenbach-data-user/{userId}', [WerthenbachController::class, 'getAllProcessedDataByUser']);
+
+
 });
