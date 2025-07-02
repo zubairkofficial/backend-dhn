@@ -24,7 +24,7 @@ class CalculateUsage
             'data_process' => DataProcess::class,
             'clone_data_process' => CloneDataProcess::class,
             'free-data-process' => FreeDataProcess::class,
-            'werthenbach' => Werthenbach::class, // Assuming Werthenbach is a model
+            'Werthenbach' => Werthenbach::class, // Assuming Werthenbach is a model
         ];
 
         // Find the service link dynamically based on the model

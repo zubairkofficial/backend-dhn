@@ -8,6 +8,7 @@ use App\Models\DataProcess;
 use App\Models\CloneDataProcess;
 use App\Models\ContractSolutions; // Assuming the model name is ContractSolution
 use App\Models\FreeDataProcess;
+use App\Models\Werthenbach;
 use App\Models\OrganizationalUser;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -59,6 +60,9 @@ class UsageController extends Controller
 
                 case 'CloneDataProcess':
                     $usageCount = CloneDataProcess::where('user_id', $user->id)->count();
+                    break;
+                case 'Werthenbach':
+                    $usageCount = Werthenbach::where('user_id', $user->id)->count();
                     break;
 
                 default:
@@ -132,6 +136,10 @@ class UsageController extends Controller
                     $usageCount = CloneDataProcess::whereIn('user_id', $organizationalUserIds)->count();
                     break;
 
+                case 'Werthenbach':
+                    $usageCount = Werthenbach::where('user_id', $user->id)->count();
+                    break;
+
                 default:
                     return response()->json(['status' => 'error', 'message' => 'Invalid model specified'], 400);
             }
@@ -174,6 +182,7 @@ class UsageController extends Controller
             'DataProcess' => DataProcess::class,
             'FreeDataProcess' => FreeDataProcess::class,
             'CloneDataProcess' => CloneDataProcess::class,
+            'Werthenbach' => Werthenbach::class,
         ];
 
         $availability = [];
