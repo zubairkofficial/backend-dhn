@@ -22,7 +22,7 @@ class UsageLimitMiddleware
      */
     public function handle(Request $request, Closure $next, $model)
     {
-        $user = auth()->user();
+        $user = Auth::user();
 
         // Unauthorized response if no authenticated user
         if (!$user) {

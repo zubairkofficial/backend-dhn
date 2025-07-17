@@ -40,8 +40,7 @@ class WerthenbachController extends Controller
             $sendNofication->sendMail($user->email, $details);
         }
 
-        // Get the authenticated user
-        $user = auth()->user();
+        $user = Auth::user();
 
         if (!$user) {
             return response()->json(['error' => 'Unauthenticated.'], 401);

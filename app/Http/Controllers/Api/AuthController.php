@@ -703,7 +703,7 @@ class AuthController extends Controller
         // yaha ka krna h
         // Fetch all records from OrganizationalUser where customer_id matches and user_id is different
         $createdUserIds = OrganizationalUser::where('customer_id', $customerId)
-            ->where('user_id', '!=', auth()->id()) // Exclude the logged-in user if necessary
+            ->where('user_id', '!=', Auth::id()) // Exclude the logged-in user if necessary
             ->pluck('user_id');
         // dd($createdUserIds);
 
@@ -718,7 +718,7 @@ class AuthController extends Controller
         $usersInOrganization = User::whereIn('id', values: $createdUserIds)->get();
 
         $organizationalUserCount = OrganizationalUser::whereIn('user_id', values: $createdUserIds)
-            ->where('user_id', '!=', auth()->id())
+            ->where('user_id', '!=', Auth::id())
             ->whereNotNull('organizational_id')
             ->pluck('organizational_id');
 

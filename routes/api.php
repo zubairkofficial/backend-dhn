@@ -1,7 +1,5 @@
 <?php
 
-use App\Http\Controllers\Api\FreeDataProcessController;
-use App\Http\Controllers\CustomerRequestController;
 use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CloneDataProcessController;
@@ -23,6 +21,7 @@ use App\Http\Controllers\UsageController;
 use App\Http\Controllers\CustomerAdminController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Middleware\UsageLimitMiddleware;
+use App\Http\Controllers\Api\ScherenController;
 
 // Auth Routes
 Route::prefix('auth')->group(function () {
@@ -143,8 +142,6 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
 
     Route::get('/getAllOrganizationalUsersForCustomer/{customerId}', [AuthController::class, 'getAllOrganizationalUsersForCustomer']);
 
-
-
     Route::post('/registerUserByCustomer', [CustomerUserController::class, 'registerUserByCustomer']);
     Route::post('/registerOrganizationalUserByCustomer', [CustomerUserController::class, 'registerOrganizationalUserByCustomer']);
     Route::post('/update-customer-user/{id}', [CustomerUserController::class, 'updateCustomerUser']);
@@ -178,5 +175,11 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::get('/get-all-werthenbach-data-organization/{userId}', [WerthenbachController::class, 'getAllProcessedDataByOrganization']);
     Route::get('/get-all-werthenbach-data-user/{userId}', [WerthenbachController::class, 'getAllProcessedDataByUser']);
 
+    // Scheren
+    Route::post('/scheren-data-process', [ScherenController::class, 'fetchScheren']);
+    Route::get('/get-user-scheren-data', [ScherenController::class, 'getUserScherenData']);
+    Route::get('/get-all-scheren-data-customer/{userId}', [ScherenController::class, 'getAllScherenDataByCustomer']);
+    Route::get('/get-all-scheren-data-organization/{userId}', [ScherenController::class, 'getAllScherenDataByOrganization']);
+    Route::get('/get-all-scheren-data-user/{userId}', [ScherenController::class, 'getAllScherenDataByUser']);
 
 });

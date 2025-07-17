@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Hash;
 // Import the Log facade
 use App\Models\Organization;
 use Illuminate\Support\Facades\Log; // Import the Log facade
+use Illuminate\Support\Facades\Auth;
 
 class CustomerUserController extends Controller
 {
@@ -316,6 +317,9 @@ class CustomerUserController extends Controller
                 'total_contract_solution_count' => $userCountData['total_contract_solution_count'] ?? 0,
                 'total_data_process_count' => $userCountData['total_data_process_count'] ?? 0,
                 'total_free_data_process_count' => $userCountData['total_free_data_process_count'] ?? 0,
+                'total_clone_data_process_count' => $userCountData['total_clone_data_process_count'] ?? 0,
+                'total_werthenbach_count' => $userCountData['total_werthenbach_count'] ?? 0,
+                'total_scheren_count' => $userCountData['total_scheren_count'] ?? 0,
             ];
         });
 
@@ -330,7 +334,7 @@ class CustomerUserController extends Controller
     {
         // Fetch initial user IDs excluding the logged-in user
         $ids = OrganizationalUser::where('customer_id', $id)
-            ->where('user_id', '!=', auth()->id())
+            ->where('user_id', '!=', Auth::id())
             ->distinct()
             ->pluck('user_id');
 
@@ -353,6 +357,8 @@ class CustomerUserController extends Controller
         $totalDataProcessCount = 0;
         $totalFreeDataProcessCount = 0;
         $totalCloneDataProcessCount = 0;
+        $totalWerthenbachCount = 0;
+        $totalScherenCount = 0;
 
         // Process each user
         foreach ($users as $user) {
@@ -373,6 +379,12 @@ class CustomerUserController extends Controller
             if (in_array('7', $userServices)) {
                 $totalCloneDataProcessCount += $user->clonedataprocesses->count();
             }
+            if (in_array('8', $userServices)) {
+                $totalWerthenbachCount += $user->werthenbachs()->count();
+            }
+            if (in_array('9', $userServices)) {
+                $totalScherenCount += $user->scherens()->count();
+            }
         }
 
         return response()->json([
@@ -381,6 +393,8 @@ class CustomerUserController extends Controller
             'total_data_process_count' => $totalDataProcessCount,
             'total_free_data_process_count' => $totalFreeDataProcessCount,
             'total_clone_data_process_count' => $totalCloneDataProcessCount,
+            'total_werthenbach_count' => $totalWerthenbachCount,
+            'total_scheren_count' => $totalScherenCount,
         ]);
     }
 }

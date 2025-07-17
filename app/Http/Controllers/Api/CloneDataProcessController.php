@@ -116,7 +116,7 @@ class CloneDataProcessController extends Controller
 
         // Define the file path
         $filePath = public_path('processed_files/' . $filename); // Ensure 'processed_files' directory exists
-        
+
         $processedFilesDir = public_path('processed_files');
         if (!file_exists($processedFilesDir)) {
             mkdir($processedFilesDir, 0755, true);
@@ -128,14 +128,14 @@ class CloneDataProcessController extends Controller
             Log::error('File move failed: ' . $e->getMessage());
             return response()->json(['error' => 'File could not be saved.'], 500);
         }
-        
+
         // Verify that the file was moved successfully
         if (!file_exists($filePath)) {
             return response()->json(['error' => 'File could not be saved.'], 500);
         }
 
         // Get the authenticated user
-        $user = auth()->user();
+        $user = Auth::user();
 
         if (!$user) {
             return response()->json(['error' => 'Unauthenticated.'], 401);

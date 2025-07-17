@@ -10,6 +10,7 @@ use App\Models\ContractSolutions; // Assuming the model name is ContractSolution
 use App\Models\FreeDataProcess;
 use App\Models\Werthenbach;
 use App\Models\OrganizationalUser;
+use App\Models\Scheren;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -64,7 +65,9 @@ class UsageController extends Controller
                 case 'Werthenbach':
                     $usageCount = Werthenbach::where('user_id', $user->id)->count();
                     break;
-
+                case 'Scheren':
+                    $usageCount = Scheren::where('user_id', $user->id)->count();
+                    break;
                 default:
                     return response()->json(['status' => 'error', 'message' => 'Invalid model specified'], 400);
             }
@@ -137,7 +140,11 @@ class UsageController extends Controller
                     break;
 
                 case 'Werthenbach':
-                    $usageCount = Werthenbach::where('user_id', $user->id)->count();
+                    $usageCount = Werthenbach::whereIn('user_id', $organizationalUserIds)->count();
+                    break;
+
+                case 'Scheren':
+                    $usageCount = Scheren::whereIn('user_id', $organizationalUserIds)->count();
                     break;
 
                 default:
@@ -183,6 +190,7 @@ class UsageController extends Controller
             'FreeDataProcess' => FreeDataProcess::class,
             'CloneDataProcess' => CloneDataProcess::class,
             'Werthenbach' => Werthenbach::class,
+            'Scheren' => Scheren::class,
         ];
 
         $availability = [];
@@ -250,10 +258,21 @@ class UsageController extends Controller
         }
 
         // Check if the user has access to the data process tool
-        if (in_array('5', $userServices)) {
+        if (in_array('7', $userServices)) {
             // Count the data processes associated with the user
             $CloneDataProcessCount = $user->clonedataprocesses()->count();
             $responseData['clone_process_count'] = $CloneDataProcessCount;
+        }
+        if (in_array('8', $userServices)) {
+            // Count the data processes associated with the user
+            $werthenbachCount = $user->werthenbachs()->count();
+            $responseData['werthenbach_count'] = $werthenbachCount;
+        }
+
+        if (in_array('9', $userServices)) {
+            // Count the data processes associated with the user
+            $scherenCount = $user->scherens()->count();
+            $responseData['scheren_count'] = $scherenCount;
         }
 
         // Return the filtered usage data based on available tools
