@@ -89,10 +89,20 @@ class User extends Authenticatable
     {
         return $this->hasMany(FreeDataProcess::class, 'user_id');
     }
-    
+
     public function clonedataprocesses()
     {
         return $this->hasMany(CloneDataProcess::class, 'user_id');
+    }
+
+    public function werthenbachs()
+    {
+        return $this->hasMany(Werthenbach::class, 'user_id');
+    }
+
+    public function scherens()
+    {
+        return $this->hasMany(Scheren::class, 'user_id');
     }
 
     public function customerUsers()

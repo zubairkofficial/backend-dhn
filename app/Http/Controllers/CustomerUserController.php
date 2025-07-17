@@ -380,10 +380,10 @@ class CustomerUserController extends Controller
                 $totalCloneDataProcessCount += $user->clonedataprocesses->count();
             }
             if (in_array('8', $userServices)) {
-                $totalWerthenbachCount += $user->werthenbachs()->count();
+                $totalWerthenbachCount += $user->werthenbachs->count();
             }
             if (in_array('9', $userServices)) {
-                $totalScherenCount += $user->scherens()->count();
+                $totalScherenCount += $user->scherens->count();
             }
         }
 
