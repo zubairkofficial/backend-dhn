@@ -320,6 +320,7 @@ class CustomerUserController extends Controller
                 'total_clone_data_process_count' => $userCountData['total_clone_data_process_count'] ?? 0,
                 'total_werthenbach_count' => $userCountData['total_werthenbach_count'] ?? 0,
                 'total_scheren_count' => $userCountData['total_scheren_count'] ?? 0,
+                'total_sennheiser_count' => $userCountData['total_sennheiser_count'] ?? 0,
             ];
         });
 
@@ -359,7 +360,7 @@ class CustomerUserController extends Controller
         $totalCloneDataProcessCount = 0;
         $totalWerthenbachCount = 0;
         $totalScherenCount = 0;
-
+        $totalSennheiserCount = 0;
         // Process each user
         foreach ($users as $user) {
             $userServices = $user->services ?? [];
@@ -385,6 +386,9 @@ class CustomerUserController extends Controller
             if (in_array('9', $userServices)) {
                 $totalScherenCount += $user->scherens->count();
             }
+            if (in_array('10', $userServices)) {
+                $totalSennheiserCount += $user->sennheisers->count();
+            }
         }
 
         return response()->json([
@@ -395,6 +399,7 @@ class CustomerUserController extends Controller
             'total_clone_data_process_count' => $totalCloneDataProcessCount,
             'total_werthenbach_count' => $totalWerthenbachCount,
             'total_scheren_count' => $totalScherenCount,
+            'total_sennheiser_count' => $totalSennheiserCount,
         ]);
     }
 }

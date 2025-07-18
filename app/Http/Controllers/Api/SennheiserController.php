@@ -4,18 +4,18 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use GuzzleHttp\Client;
-use GuzzleHttp\Exception\RequestException;
-use App\Models\Scheren;
-use App\Models\OrganizationalUser;
-use App\Models\User;
 use App\Services\CalculateUsage;
 use App\Services\SendNotifyMail;
+use GuzzleHttp\Client;
+use GuzzleHttp\Exception\RequestException;
+use App\Models\Sennheiser;
+use App\Models\OrganizationalUser;
+use App\Models\User;
+use Illuminate\Support\Facades\Auth;
 
-class ScherenController extends Controller
+class SennheiserController extends Controller
 {
-    public function fetchScheren(Request $request)
+    public function fetchSennheiser(Request $request)
     {
         set_time_limit(600);
 
@@ -25,7 +25,7 @@ class ScherenController extends Controller
         ]);
 
         $calculateUsage = new CalculateUsage();
-        $usage = $calculateUsage->calculateUsage(Scheren::class);
+        $usage = $calculateUsage->calculateUsage(Sennheiser::class);
         $status = $usage['status'];
         $details['userCounterLimit'] = $usage['userCounterLimit'];
         $details['usageCount'] = $usage['usageCount'];
@@ -41,8 +41,7 @@ class ScherenController extends Controller
 
         foreach ($request->file('documents') as $file) {
             $fileName = $file->getClientOriginalName();
-            $url = 'http://20.218.155.138/datasheet/scheren';
-
+            $url = 'http://20.218.155.138/datasheet/sennheiser';
 
             $username = 'api_user';
             $password = 'g*f>G31B=9D7';
@@ -74,7 +73,7 @@ class ScherenController extends Controller
                 if ($response->getStatusCode() >= 200 && $response->getStatusCode() < 300) {
                     $responseData = json_decode($response->getBody(), true);
 
-                    Scheren::create([
+                    Sennheiser::create([
                         'file_name' => $fileName,
                         'data' => base64_encode(json_encode($responseData)),
                         'user_id' => $userId,
@@ -93,7 +92,7 @@ class ScherenController extends Controller
         return response()->json(['message' => 'Files processed successfully', 'data' => $responses]);
     }
 
-    public function getUserScherenData(Request $request)
+    public function getUserSennheiserData(Request $request)
     {
         $user = Auth::user();
         if (!$user) {
@@ -126,20 +125,20 @@ class ScherenController extends Controller
 
         $userIds = array_unique($userIds);
 
-        $scherenData = Scheren::whereIn('user_id', $userIds)
+        $sennheiserData = Sennheiser::whereIn('user_id', $userIds)
             ->orderBy('created_at', 'desc')
             ->get();
-        $scherenData->transform(function ($item) {
+        $sennheiserData->transform(function ($item) {
             $item->data = json_decode(base64_decode($item->data), true);
             return $item;
         });
 
         return response()->json([
             'message' => 'Data fetched successfully',
-            'data' => $scherenData,
+            'data' => $sennheiserData,
         ]);
     }
-    public function getAllScherenDataByCustomer($userId)
+    public function getAllSennheiserDataByCustomer($userId)
     {
         $userIds = [$userId];
 
@@ -162,23 +161,23 @@ class ScherenController extends Controller
 
         $userData = User::whereIn('id', $userIds)->select('id', 'name')->get();
 
-        $scherenData = Scheren::whereIn('user_id', $userIds)
+        $sennheiserData = Sennheiser::whereIn('user_id', $userIds)
             ->with('user')
             ->orderBy('created_at', 'desc')
             ->get();
 
-        $scherenData->transform(function ($item) {
+        $sennheiserData->transform(function ($item) {
             $item->data = json_decode(base64_decode($item->data), true);
             return $item;
         });
 
         return response()->json([
             'message' => 'Data fetched successfully',
-            'data' => $scherenData,
+            'data' => $sennheiserData,
             'users' => $userData,
         ]);
     }
-    public function getAllScherenDataByOrganization($userId)
+    public function getAllSennheiserDataByOrganization($userId)
     {
 
         $userId = $userId;
@@ -200,23 +199,23 @@ class ScherenController extends Controller
 
         $userData = User::whereIn('id', $userIds)->select('id', 'name')->get();
 
-        $scherenData = Scheren::whereIn('user_id', $userIds)
+        $sennheiserData = Sennheiser::whereIn('user_id', $userIds)
             ->with('user')
             ->orderBy('created_at', 'desc')
             ->get();
 
-        $scherenData->transform(function ($item) {
+        $sennheiserData->transform(function ($item) {
             $item->data = json_decode(base64_decode($item->data), true);
             return $item;
         });
 
         return response()->json([
             'message' => 'Data fetched successfully',
-            'data' => $scherenData,
+            'data' => $sennheiserData,
             'users' => $userData,
         ]);
     }
-    public function getAllScherenDataByUser($userId)
+    public function getAllSennheiserDataByUser($userId)
     {
 
         $userId = $userId;
@@ -238,19 +237,19 @@ class ScherenController extends Controller
 
         $userData = User::whereIn('id', $userIds)->select('id', 'name')->get();
 
-        $scherenData = Scheren::whereIn('user_id', $userIds)
+        $sennheiserData = Sennheiser::whereIn('user_id', $userIds)
             ->with('user')
             ->orderBy('created_at', 'desc')
             ->get();
 
-        $scherenData->transform(function ($item) {
+        $sennheiserData->transform(function ($item) {
             $item->data = json_decode(base64_decode($item->data), true);
             return $item;
         });
 
         return response()->json([
             'message' => 'Data fetched successfully',
-            'data' => $scherenData,
+            'data' => $sennheiserData,
             'users' => $userData,
         ]);
     }

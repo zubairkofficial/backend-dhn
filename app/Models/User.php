@@ -105,6 +105,11 @@ class User extends Authenticatable
         return $this->hasMany(Scheren::class, 'user_id');
     }
 
+    public function sennheisers()
+    {
+        return $this->hasMany(Sennheiser::class, 'user_id');
+    }
+
     public function customerUsers()
     {
         return $this->hasMany(OrganizationalUser::class, 'customer_id')->with('organizational');

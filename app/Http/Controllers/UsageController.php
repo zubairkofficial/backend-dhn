@@ -11,6 +11,7 @@ use App\Models\FreeDataProcess;
 use App\Models\Werthenbach;
 use App\Models\OrganizationalUser;
 use App\Models\Scheren;
+use App\Models\Sennheiser;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -67,6 +68,9 @@ class UsageController extends Controller
                     break;
                 case 'Scheren':
                     $usageCount = Scheren::where('user_id', $user->id)->count();
+                    break;
+                case 'Sennheiser':
+                    $usageCount = Sennheiser::where('user_id', $user->id)->count();
                     break;
                 default:
                     return response()->json(['status' => 'error', 'message' => 'Invalid model specified'], 400);
@@ -147,6 +151,10 @@ class UsageController extends Controller
                     $usageCount = Scheren::whereIn('user_id', $organizationalUserIds)->count();
                     break;
 
+                case 'Sennheiser':
+                    $usageCount = Sennheiser::whereIn('user_id', $organizationalUserIds)->count();
+                    break;
+
                 default:
                     return response()->json(['status' => 'error', 'message' => 'Invalid model specified'], 400);
             }
@@ -191,6 +199,7 @@ class UsageController extends Controller
             'CloneDataProcess' => CloneDataProcess::class,
             'Werthenbach' => Werthenbach::class,
             'Scheren' => Scheren::class,
+            'Sennheiser' => Sennheiser::class,
         ];
 
         $availability = [];
@@ -273,6 +282,12 @@ class UsageController extends Controller
             // Count the data processes associated with the user
             $scherenCount = $user->scherens()->count();
             $responseData['scheren_count'] = $scherenCount;
+        }
+
+        if (in_array('10', $userServices)) {
+            // Count the data processes associated with the user
+            $sennheiserCount = $user->sennheisers()->count();
+            $responseData['sennheiser_count'] = $sennheiserCount;
         }
 
         // Return the filtered usage data based on available tools

@@ -22,6 +22,7 @@ use App\Http\Controllers\CustomerAdminController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Middleware\UsageLimitMiddleware;
 use App\Http\Controllers\Api\ScherenController;
+use App\Http\Controllers\Api\SennheiserController;
 
 // Auth Routes
 Route::prefix('auth')->group(function () {
@@ -169,7 +170,7 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::get('/deleteInvoiceById/{id}', [InvoiceController::class, 'deleteInvoiceById']);
     Route::delete('/deleteInvoicesByUploadDate/{uploadDate}', [InvoiceController::class, 'deleteInvoicesByUploadDate']);
 
-    Route::post('/fetch-data-werthenbach',[WerthenbachController::class, 'fetchData']);
+    Route::post('/fetch-data-werthenbach', [WerthenbachController::class, 'fetchData']);
     Route::get('/get-user-werthenbach-data', [WerthenbachController::class, 'getUserProcessedData']);
     Route::get('/get-all-werthenbach-data-customer/{userId}', [WerthenbachController::class, 'getAllProcessedDataByCustomer']);
     Route::get('/get-all-werthenbach-data-organization/{userId}', [WerthenbachController::class, 'getAllProcessedDataByOrganization']);
@@ -182,4 +183,10 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::get('/get-all-scheren-data-organization/{userId}', [ScherenController::class, 'getAllScherenDataByOrganization']);
     Route::get('/get-all-scheren-data-user/{userId}', [ScherenController::class, 'getAllScherenDataByUser']);
 
+    // Sennheiser
+    Route::post('/sennheiser-data-process', [SennheiserController::class, 'fetchSennheiser']);
+    Route::get('/get-user-sennheiser-data', [SennheiserController::class, 'getUserSennheiserData']);
+    Route::get('/get-all-sennheiser-data-customer/{userId}', [SennheiserController::class, 'getAllSennheiserDataByCustomer']);
+    Route::get('/get-all-sennheiser-data-organization/{userId}', [SennheiserController::class, 'getAllSennheiserDataByOrganization']);
+    Route::get('/get-all-sennheiser-data-user/{userId}', [SennheiserController::class, 'getAllSennheiserDataByUser']);
 });
