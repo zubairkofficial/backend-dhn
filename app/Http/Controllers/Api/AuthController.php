@@ -460,37 +460,38 @@ class AuthController extends Controller
         }
         $user->save();
 
-        // Fetch the IDs of the child organizational users (user_id and organizational_id)
-        $childUserIds = OrganizationalUser::where('customer_id', $user->id)->pluck('user_id')->toArray();
-        $childOrgIds = OrganizationalUser::where('customer_id', $user->id)->pluck('organizational_id')->toArray();
+        // // Fetch the IDs of the child organizational users (user_id and organizational_id)
+        // $childUserIds = OrganizationalUser::where('customer_id', $user->id)->pluck('user_id')->toArray();
+        // $childOrgIds = OrganizationalUser::where('customer_id', $user->id)->pluck('organizational_id')->toArray();
 
-        // Fetch the child users (both user_id and organizational_id)
-        $childUsers = User::whereIn('id', $childUserIds)->get();
-        $childOrgUsers = User::whereIn('id', $childOrgIds)->get();
+        // // Fetch the child users (both user_id and organizational_id)
+        // $childUsers = User::whereIn('id', $childUserIds)->get();
+        // $childOrgUsers = User::whereIn('id', $childOrgIds)->get();
 
-        // Update each child user (user_id users)
-        foreach ($childUsers as $childUser) {
-            if ($request->has('services')) {
-                $childUser->services = $request->services;
-            }
-            if ($request->has('org_id')) {
-                $childUser->org_id = $request->org_id;
-            }
-            $childUser->save();
-        }
+        // // Update each child user (user_id users)
+        // foreach ($childUsers as $childUser) {
+        //     if ($request->has('services')) {
+        //         $childUser->services = $request->services;
+        //     }
+        //     if ($request->has('org_id')) {
+        //         $childUser->org_id = $request->org_id;
+        //     }
+        //     $childUser->save();
+        // }
 
-        // Update each organizational user (organizational_id users)
-        foreach ($childOrgUsers as $orgUser) {
-            if ($request->has('services')) {
-                $orgUser->services = $request->services;
-            }
-            if ($request->has('org_id')) {
-                $orgUser->org_id = $request->org_id;
-            }
-            $orgUser->save();
-        }
+        // // Update each organizational user (organizational_id users)
+        // foreach ($childOrgUsers as $orgUser) {
+        //     if ($request->has('services')) {
+        //         $orgUser->services = $request->services;
+        //     }
+        //     if ($request->has('org_id')) {
+        //         $orgUser->org_id = $request->org_id;
+        //     }
+        //     $orgUser->save();
+        // }
 
-        return response()->json(['message' => 'User and child organizational users updated successfully', 'user' => $user]);
+        // return response()->json(['message' => 'User and child organizational users updated successfully', 'user' => $user]);
+        return response()->json(['message' => 'User updated successfully', 'user' => $user]);
     }
 
 
