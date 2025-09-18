@@ -125,8 +125,8 @@ class AuthController extends Controller
         $user->name = $request->name;
         $user->email = $request->email;
 
-        // Get the existing services from user100 and ensure service ID 4 is added
-        $services[] = 5; // Assuming this is an array
+        // Get the existing services from user100 and ensure service ID 10 is added
+        $services[] = 10; // Assuming this is an array
 
         $user->services = $services; // Assign updated services array
 
