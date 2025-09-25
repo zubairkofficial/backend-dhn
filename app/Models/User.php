@@ -109,6 +109,10 @@ class User extends Authenticatable
     {
         return $this->hasMany(Sennheiser::class, 'user_id');
     }
+    public function verbunds()
+    {
+        return $this->hasMany(Verbund::class, 'user_id');
+    }
 
     public function customerUsers()
     {

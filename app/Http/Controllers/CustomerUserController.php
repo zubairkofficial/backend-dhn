@@ -321,6 +321,7 @@ class CustomerUserController extends Controller
                 'total_werthenbach_count' => $userCountData['total_werthenbach_count'] ?? 0,
                 'total_scheren_count' => $userCountData['total_scheren_count'] ?? 0,
                 'total_sennheiser_count' => $userCountData['total_sennheiser_count'] ?? 0,
+                'total_verbund_count' => $userCountData['total_verbund_count'] ?? 0,
             ];
         });
 
@@ -349,7 +350,7 @@ class CustomerUserController extends Controller
 
         // Preload necessary relationships for efficiency
         $users = User::whereIn('id', $uniqueIds)
-            ->with(['documents', 'contractSolutions', 'dataprocesses', 'freedataprocesses', 'clonedataprocesses'])
+            ->with(['documents', 'contractSolutions', 'dataprocesses', 'freedataprocesses', 'clonedataprocesses', 'werthenbachs', 'scherens', 'sennheisers', 'verbunds'])
             ->get();
 
         // Initialize counters
@@ -361,6 +362,7 @@ class CustomerUserController extends Controller
         $totalWerthenbachCount = 0;
         $totalScherenCount = 0;
         $totalSennheiserCount = 0;
+        $totalVerbundCount = 0;
         // Process each user
         foreach ($users as $user) {
             $userServices = $user->services ?? [];
@@ -389,6 +391,9 @@ class CustomerUserController extends Controller
             if (in_array('10', $userServices)) {
                 $totalSennheiserCount += $user->sennheisers->count();
             }
+            if (in_array('11', $userServices)) {
+                $totalVerbundCount += $user->verbunds->count();
+            }
         }
 
         return response()->json([
@@ -400,6 +405,7 @@ class CustomerUserController extends Controller
             'total_werthenbach_count' => $totalWerthenbachCount,
             'total_scheren_count' => $totalScherenCount,
             'total_sennheiser_count' => $totalSennheiserCount,
+            'total_verbund_count' => $totalVerbundCount,
         ]);
     }
 }

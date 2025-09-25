@@ -12,6 +12,7 @@ use App\Models\Werthenbach;
 use App\Models\OrganizationalUser;
 use App\Models\Scheren;
 use App\Models\Sennheiser;
+use App\Models\Verbund;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -71,6 +72,9 @@ class UsageController extends Controller
                     break;
                 case 'Sennheiser':
                     $usageCount = Sennheiser::where('user_id', $user->id)->count();
+                    break;
+                case 'Verbund':
+                    $usageCount = Verbund::where('user_id', $user->id)->count();
                     break;
                 default:
                     return response()->json(['status' => 'error', 'message' => 'Invalid model specified'], 400);
@@ -155,6 +159,10 @@ class UsageController extends Controller
                     $usageCount = Sennheiser::whereIn('user_id', $organizationalUserIds)->count();
                     break;
 
+                case 'Verbund':
+                    $usageCount = Verbund::whereIn('user_id', $organizationalUserIds)->count();
+                    break;
+
                 default:
                     return response()->json(['status' => 'error', 'message' => 'Invalid model specified'], 400);
             }
@@ -200,6 +208,7 @@ class UsageController extends Controller
             'Werthenbach' => Werthenbach::class,
             'Scheren' => Scheren::class,
             'Sennheiser' => Sennheiser::class,
+            'Verbund' => Verbund::class,
         ];
 
         $availability = [];
@@ -288,6 +297,12 @@ class UsageController extends Controller
             // Count the data processes associated with the user
             $sennheiserCount = $user->sennheisers()->count();
             $responseData['sennheiser_count'] = $sennheiserCount;
+        }
+
+        if (in_array('11', $userServices)) {
+            // Count the data processes associated with the user
+            $verbundCount = $user->verbunds()->count();
+            $responseData['verbund_count'] = $verbundCount;
         }
 
         // Return the filtered usage data based on available tools

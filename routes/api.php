@@ -23,6 +23,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Middleware\UsageLimitMiddleware;
 use App\Http\Controllers\Api\ScherenController;
 use App\Http\Controllers\Api\SennheiserController;
+use App\Http\Controllers\Api\VerbundController;
 
 // Auth Routes
 Route::prefix('auth')->group(function () {
@@ -189,4 +190,11 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::get('/get-all-sennheiser-data-customer/{userId}', [SennheiserController::class, 'getAllSennheiserDataByCustomer']);
     Route::get('/get-all-sennheiser-data-organization/{userId}', [SennheiserController::class, 'getAllSennheiserDataByOrganization']);
     Route::get('/get-all-sennheiser-data-user/{userId}', [SennheiserController::class, 'getAllSennheiserDataByUser']);
+
+    // Verbund
+    Route::post('/verbund-data-process', [VerbundController::class, 'fetchVerbund']);
+    Route::get('/get-user-verbund-data', [VerbundController::class, 'getUserVerbundData']);
+    Route::get('/get-all-verbund-data-customer/{userId}', [VerbundController::class, 'getAllVerbundDataByCustomer']);
+    Route::get('/get-all-verbund-data-organization/{userId}', [VerbundController::class, 'getAllVerbundDataByOrganization']);
+    Route::get('/get-all-verbund-data-user/{userId}', [VerbundController::class, 'getAllVerbundDataByUser']);
 });

@@ -9,6 +9,9 @@ use App\Models\ContractSolutions;
 use App\Models\FreeDataProcess;
 use App\Models\Service;
 use App\Models\Werthenbach;
+use App\Models\Scheren;
+use App\Models\Sennheiser;
+use App\Models\Verbund;
 use Illuminate\Support\Facades\Auth;
 
 class CalculateUsage
@@ -25,6 +28,9 @@ class CalculateUsage
             'clone_data_process' => CloneDataProcess::class,
             'free-data-process' => FreeDataProcess::class,
             'Werthenbach' => Werthenbach::class, // Assuming Werthenbach is a model
+            'Scheren' => Scheren::class,
+            'Sennheiser' => Sennheiser::class,
+            'Verbund' => Verbund::class,
         ];
 
         // Find the service link dynamically based on the model
