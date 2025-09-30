@@ -63,13 +63,11 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     // Route::get('/customer-requests', [CustomerRequestController::class, 'getRequests']);
     // Route::post('/customer-requests/{id}/approve', [CustomerRequestController::class, 'approveRequest']);
     // Route::post('/customer-requests/{id}/decline', [CustomerRequestController::class, 'declineRequest']);
+    
     // User Usage Routes
     Route::get('/user/{id}/document-count', [UsageController::class, 'getUserDocumentCount']);
     Route::get('/check-usage-count/{model}', [UsageController::class, 'getUsageCount']);
     Route::get('all-service-availability', [UsageController::class, 'getServiceAvailability']);
-
-    Route::get('/user-tool-counter', [UserController::class, 'userToolCounter']);
-
 
     // Service Routes
     Route::get('all-services', [ServiceController::class, 'allServices']);

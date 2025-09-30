@@ -2,11 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\CloneDataProcess;
-use App\Models\ContractSolutions;
-use App\Models\DataProcess;
-use App\Models\Document;
-use App\Models\FreeDataProcess;
 use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\Service;
@@ -14,7 +9,6 @@ use App\Models\OrganizationalUser;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log; // Import the Log facade
 use App\Models\Organization;
-use Illuminate\Support\Facades\Auth;
 
 class UserController extends Controller
 {
@@ -432,31 +426,5 @@ class UserController extends Controller
         $user->delete();
 
         return response()->json(['message' => 'User deleted successfully'], 200);
-    }
-
-    public function userToolCounter()
-    {
-        // Get the ID of the currently logged-in user
-        $userId = Auth::id();
-
-        // Fetch counts specific to the logged-in user
-        $dataProcessCount = DataProcess::where('user_id', $userId)->count();
-        $documentsCount = Document::where('user_id', $userId)->count();
-        $contractSolutionCount = ContractSolutions::where('user_id', $userId)->count();
-        $freeDataProcessCount = FreeDataProcess::where('user_id', $userId)->count();
-        $cloneDataProcessCount = CloneDataProcess::where('user_id', $userId)->count();
-
-        // Calculate the total count
-        $allCount = $dataProcessCount + $documentsCount + $contractSolutionCount + $freeDataProcessCount + $cloneDataProcessCount;
-
-        // Return counts as an array
-        return [
-            'dataProcessCount' => $dataProcessCount,
-            'documentsCount' => $documentsCount,
-            'contractSolutionCount' => $contractSolutionCount,
-            'freeDataProcessCount' => $freeDataProcessCount,
-            'cloneDataProcessCount' => $cloneDataProcessCount,
-            'allCount' => $allCount,
-        ];
     }
 }

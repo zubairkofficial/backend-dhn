@@ -769,6 +769,10 @@ class AuthController extends Controller
                 'contractSolutionCount' => $documents['contractSolutionCount'],
                 'freeDataProcessCount' => $documents['freeDataProcessCount'],
                 'cloneDataProcessCount' => $documents['cloneDataProcessCount'],
+                'werthenbachCount' => $documents['werthenbachCount'],
+                'scherenCount' => $documents['scherenCount'],
+                'sennheiserCount' => $documents['sennheiserCount'],
+                'verbundCount' => $documents['verbundCount'],
                 'allCount' => $documents['allCount'],
                 'organization_name' => $organizationNames->get($user->org_id),
                 'is_user_organizational' => $user->is_user_organizational, // Add this
