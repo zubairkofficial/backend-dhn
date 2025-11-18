@@ -1,10 +1,10 @@
 <?php
-
 namespace App\Http\Middleware;
 
 use App\Models\CloneDataProcess;
 use App\Models\ContractSolutions;
 use App\Models\DataProcess;
+use App\Models\DemoDataProcess;
 use App\Models\Document;
 use App\Models\FreeDataProcess;
 use App\Models\OrganizationalUser;
@@ -25,7 +25,7 @@ class UsageLimitMiddleware
         $user = Auth::user();
 
         // Unauthorized response if no authenticated user
-        if (!$user) {
+        if (! $user) {
             return response()->json(['status' => 'error', 'message' => 'Unauthorized'], 401);
         }
         // Check if the user's contract has expired
@@ -38,18 +38,18 @@ class UsageLimitMiddleware
             return $next($request); // Skip the counter checks and allow the request to continue
         }
 
-        // Get the user's counter limit (ensure it's a valid number)
+                                                       // Get the user's counter limit (ensure it's a valid number)
         $userCounterLimit = $user->counter_limit ?? 0; // default to 0 if null
 
         // Get the organizational IDs associated with the authenticated user
         $organizationalUserId = OrganizationalUser::where('user_id', Auth::user()->id)
             ->first();
 
-        if (!$organizationalUserId) {
+        if (! $organizationalUserId) {
             $organizationalUserId = OrganizationalUser::where('organizational_id', Auth::user()->id)
                 ->first();
         }
-        if (!$organizationalUserId) {
+        if (! $organizationalUserId) {
             return response()->json(['status' => 'error', 'message' => 'No valid organizational data found'], 400);
         }
 
@@ -82,6 +82,10 @@ class UsageLimitMiddleware
 
             case 'CloneDataProcess':
                 $usageCount = CloneDataProcess::whereIn('user_id', $organizationalUserIds)->count();
+                break;
+
+            case 'DemoDataProcess':
+                $usageCount = DemoDataProcess::whereIn('user_id', $organizationalUserIds)->count();
                 break;
 
             default:

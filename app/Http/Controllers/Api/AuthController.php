@@ -1,21 +1,19 @@
 <?php
-
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Mail\WelcomeEmail;
-use App\Models\CustomerAdmin;
 use App\Models\LogoSetting;
 use App\Models\Organization;
+use App\Models\OrganizationalUser;
 use App\Models\Service;
-use App\Models\{User, Translation};
+use App\Models\Translation;
+use App\Models\User;
+use function Pest\Laravel\json;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use App\Models\OrganizationalUser;
 use Illuminate\Support\Facades\Mail;
-
-use function Pest\Laravel\json;
 
 class AuthController extends Controller
 {
@@ -23,38 +21,37 @@ class AuthController extends Controller
     {
         // dd($request->all());
         $request->validate([
-            'name' => 'required',
-            'email' => 'required|email|unique:users',
-            'password' => 'required|min:8',
-            'services' => 'required|array',
+            'name'                   => 'required',
+            'email'                  => 'required|email|unique:users',
+            'password'               => 'required|min:8',
+            'services'               => 'required|array',
             'is_user_organizational' => 'nullable|boolean',
         ], [
-            'name.required' => 'Der Name ist erforderlich.',
+            'name.required'                  => 'Der Name ist erforderlich.',
 
-            'email.required' => 'Die E-Mail-Adresse ist erforderlich.',
-            'email.email' => 'Bitte geben Sie eine gültige E-Mail-Adresse ein.',
-            'email.unique' => 'Diese E-Mail-Adresse wird bereits verwendet.',
+            'email.required'                 => 'Die E-Mail-Adresse ist erforderlich.',
+            'email.email'                    => 'Bitte geben Sie eine gültige E-Mail-Adresse ein.',
+            'email.unique'                   => 'Diese E-Mail-Adresse wird bereits verwendet.',
 
-            'password.required' => 'Das Passwort ist erforderlich.',
-            'password.min' => 'Das Passwort muss mindestens 8 Zeichen lang sein.',
+            'password.required'              => 'Das Passwort ist erforderlich.',
+            'password.min'                   => 'Das Passwort muss mindestens 8 Zeichen lang sein.',
 
-            'services.required' => 'Der Service ist erforderlich.',
-            'services.array' => 'Der Service muss ein Array sein.',
+            'services.required'              => 'Der Service ist erforderlich.',
+            'services.array'                 => 'Der Service muss ein Array sein.',
 
             'is_user_organizational.boolean' => 'Der Organisationsstatus muss ein boolescher Wert sein.',
         ]);
 
-
-        $user = new User();
-        $user->name = $request->name;
-        $user->email = $request->email;
+        $user           = new User();
+        $user->name     = $request->name;
+        $user->email    = $request->email;
         $user->password = Hash::make($request->password);
 
         if ($request->counterLimit) {
-            $user->counter_limit =  $request->counterLimit;
+            $user->counter_limit = $request->counterLimit;
         }
         if ($request->expirationDate) {
-            $user->expiration_date =  $request->expirationDate;
+            $user->expiration_date = $request->expirationDate;
         }
         if ($request->services) {
             $user->services = $request->services;
@@ -72,36 +69,36 @@ class AuthController extends Controller
         if ($request->creator_id) {
             OrganizationalUser::create([
                 'customer_id' => $request->creator_id,
-                'user_id' => $user->id
+                'user_id'     => $user->id,
             ]);
         }
         $token = $user->createToken('user_token')->plainTextToken;
 
         return response()->json([
             "message" => "You are registered successfully. Please verify your email to continue",
-            "user" => $user,
-            "token" => $token,
+            "user"    => $user,
+            "token"   => $token,
         ], 200);
     }
     public function registerCustomer(Request $request)
     {
         // Validate the request input
         $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email',
+            'name'     => 'required|string|max:255',
+            'email'    => 'required|email|unique:users,email',
             'password' => 'required|string|min:8',
         ], [
-            'name.required' => 'Der Name ist erforderlich.',
-            'name.string' => 'Der Name muss eine Zeichenkette sein.',
-            'name.max' => 'Der Name darf nicht länger als 255 Zeichen sein.',
+            'name.required'     => 'Der Name ist erforderlich.',
+            'name.string'       => 'Der Name muss eine Zeichenkette sein.',
+            'name.max'          => 'Der Name darf nicht länger als 255 Zeichen sein.',
 
-            'email.required' => 'Die E-Mail-Adresse ist erforderlich.',
-            'email.email' => 'Bitte geben Sie eine gültige E-Mail-Adresse ein.',
-            'email.unique' => 'Diese E-Mail-Adresse wird bereits verwendet.',
+            'email.required'    => 'Die E-Mail-Adresse ist erforderlich.',
+            'email.email'       => 'Bitte geben Sie eine gültige E-Mail-Adresse ein.',
+            'email.unique'      => 'Diese E-Mail-Adresse wird bereits verwendet.',
 
             'password.required' => 'Das Passwort ist erforderlich.',
-            'password.string' => 'Das Passwort muss eine Zeichenkette sein.',
-            'password.min' => 'Das Passwort muss mindestens 8 Zeichen lang sein.',
+            'password.string'   => 'Das Passwort muss eine Zeichenkette sein.',
+            'password.min'      => 'Das Passwort muss mindestens 8 Zeichen lang sein.',
         ]);
 
         // Retrieve the services of the user with id = 100
@@ -110,48 +107,45 @@ class AuthController extends Controller
             ->where(['is_user_customer' => 1, 'org_id' => null])
             ->first();
 
-
         $organizationalUser = User::find($firstCustomerAdmin->customerUserWithNullOrganization->user_id);
 
-
-        if (!isset($firstCustomerAdmin)) {
+        if (! isset($firstCustomerAdmin)) {
             return response()->json(['error' => 'Something went wrong'], 500);
         }
 
         $user100 = User::where('email', 'uwe.leven@cretschmar.de')->first();
 
         // Create a new user
-        $user = new User();
-        $user->name = $request->name;
+        $user        = new User();
+        $user->name  = $request->name;
         $user->email = $request->email;
 
-        // Get the existing services from user100 and ensure service ID 7 is added
-        $services[] = 7; // Assuming this is an array
+                          // Get the existing services from user100 and ensure service ID 12 (SDB2Excel Demoversion) is added
+        $services[] = 12; // Assuming this is an array
 
         $user->services = $services; // Assign updated services array
 
-        $user->org_id = $organizationalUser->org_id;
+        $user->org_id                 = $organizationalUser->org_id;
         $user->is_user_organizational = 0;
 
-
         $user->password = Hash::make($request->password);
-        // $user->counter_limit = $organizationalUser->counter_limit;
-        $user->counter_limit = 3;
+                                  // $user->counter_limit = $organizationalUser->counter_limit;
+        $user->counter_limit = 3; // Set limit to 3 for demo version
 
-        $user->expiration_date = $organizationalUser->expiration_date;
+        $user->expiration_date    = $organizationalUser->expiration_date;
         $user->user_register_type = "out";
         $user->save();
 
         // Save the creator and new user in OrganizationalUser
         OrganizationalUser::create([
-            'user_id' => $firstCustomerAdmin->customerUserWithNullOrganization->user_id,
-            'customer_id' => $user100->id,
+            'user_id'           => $firstCustomerAdmin->customerUserWithNullOrganization->user_id,
+            'customer_id'       => $user100->id,
             'organizational_id' => $user->id,
         ]);
 
         LogoSetting::create([
             'user_id' => $user->id,
-            'logo' => 'logos/1727182162.svg',
+            'logo'    => 'logos/1727182162.svg',
 
         ]);
 
@@ -163,46 +157,44 @@ class AuthController extends Controller
         // Return a response with the user data and token
         return response()->json([
             "message" => "Customer registered successfully.",
-            "user" => $user,
-            "token" => $token,
+            "user"    => $user,
+            "token"   => $token,
         ], 201);
     }
-
-
 
     public function registerCustomerByAdmin(Request $request)
     {
         // Validate the request input with custom messages
         $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email',
+            'name'     => 'required|string|max:255',
+            'email'    => 'required|email|unique:users,email',
             'password' => 'required|string|min:8',
             'services' => 'required|array',
         ], [
-            'name.required' => 'Der Name ist erforderlich.',
-            'name.string' => 'Der Name muss eine Zeichenkette sein.',
-            'name.max' => 'Der Name darf nicht länger als 255 Zeichen sein.',
+            'name.required'     => 'Der Name ist erforderlich.',
+            'name.string'       => 'Der Name muss eine Zeichenkette sein.',
+            'name.max'          => 'Der Name darf nicht länger als 255 Zeichen sein.',
 
-            'email.required' => 'Die E-Mail-Adresse ist erforderlich.',
-            'email.email' => 'Bitte geben Sie eine gültige E-Mail-Adresse ein.',
-            'email.unique' => 'Diese E-Mail-Adresse wird bereits verwendet.',
+            'email.required'    => 'Die E-Mail-Adresse ist erforderlich.',
+            'email.email'       => 'Bitte geben Sie eine gültige E-Mail-Adresse ein.',
+            'email.unique'      => 'Diese E-Mail-Adresse wird bereits verwendet.',
 
             'password.required' => 'Das Passwort ist erforderlich.',
-            'password.string' => 'Das Passwort muss eine Zeichenkette sein.',
-            'password.min' => 'Das Passwort muss mindestens 8 Zeichen lang sein.',
+            'password.string'   => 'Das Passwort muss eine Zeichenkette sein.',
+            'password.min'      => 'Das Passwort muss mindestens 8 Zeichen lang sein.',
 
             'services.required' => 'Der Service ist erforderlich.',
-            'services.array' => 'Der Service muss ein Array sein.',
+            'services.array'    => 'Der Service muss ein Array sein.',
         ]);
 
         // Create the customer user
-        $customerUser = new User();
-        $customerUser->name = $request->name;
-        $customerUser->email = $request->email;
+        $customerUser                         = new User();
+        $customerUser->name                   = $request->name;
+        $customerUser->email                  = $request->email;
         $customerUser->is_user_organizational = 1;
-        $customerUser->is_user_customer = 1;
-        $customerUser->password = Hash::make($request->password);
-        $customerUser->services = $request->services;
+        $customerUser->is_user_customer       = 1;
+        $customerUser->password               = Hash::make($request->password);
+        $customerUser->services               = $request->services;
 
         if ($request->org_id) {
             $customerUser->org_id = $request->org_id;
@@ -219,14 +211,14 @@ class AuthController extends Controller
         $token = $customerUser->createToken('user_token')->plainTextToken;
 
         // Automatically create the organization user
-        $organizationUser = new User();
-        $organizationUser->name = "Default Organization User";
-        $organizationUser->email = "default_org_user_" . $customerUser->email; // Change email to a default unique value
+        $organizationUser                         = new User();
+        $organizationUser->name                   = "Default Organization User";
+        $organizationUser->email                  = "default_org_user_" . $customerUser->email; // Change email to a default unique value
         $organizationUser->is_user_organizational = 1;
-        $organizationUser->is_user_customer = 0;
-        $organizationUser->password = Hash::make($request->password);
-        $organizationUser->services = $request->services;
-        $organizationUser->counter_limit = $customerUser->counter_limit;
+        $organizationUser->is_user_customer       = 0;
+        $organizationUser->password               = Hash::make($request->password);
+        $organizationUser->services               = $request->services;
+        $organizationUser->counter_limit          = $customerUser->counter_limit;
         if ($request->org_id) {
             $organizationUser->org_id = $request->org_id;
         }
@@ -234,17 +226,17 @@ class AuthController extends Controller
         $organizationUser->save();
 
         // Create relation in the OrganizationalUser table
-        $organizationalUser = new OrganizationalUser();
+        $organizationalUser              = new OrganizationalUser();
         $organizationalUser->customer_id = $customerUser->id;
-        $organizationalUser->user_id = $organizationUser->id;
+        $organizationalUser->user_id     = $organizationUser->id;
         $organizationalUser->save();
 
         // Return a response with the customer data and token
         return response()->json([
-            "message" => "Customer and organization user registered successfully.",
-            "customer_user" => $customerUser,
+            "message"           => "Customer and organization user registered successfully.",
+            "customer_user"     => $customerUser,
             "organization_user" => $organizationUser,
-            "token" => $token,
+            "token"             => $token,
         ], 201);
     }
 
@@ -252,27 +244,24 @@ class AuthController extends Controller
     {
 
         $request->validate([
-            'customerAdminId' => 'required',
-            'organizationalUserId' => 'required',
-            'userId' => 'required|exists:users,id',
-            'services' => 'required|array',
-            'is_user_customer' => 'required',
+            'customerAdminId'        => 'required',
+            'organizationalUserId'   => 'required',
+            'userId'                 => 'required|exists:users,id',
+            'services'               => 'required|array',
+            'is_user_customer'       => 'required',
             'is_user_organizational' => 'required',
         ], [
-            'customerAdminId.required' => 'Der Kunden-Admin ist erforderlich.',
-            'organizationalUserId.required' => 'Der Organisationsbenutzer ist erforderlich.',
-            'userId.required' => 'Die Benutzer-ID ist erforderlich.',
-            'userId.exists' => 'Die Benutzer-ID muss in der Benutzertabelle existieren.',
-            'services.required' => 'Der Service ist erforderlich.',
-            'services.array' => 'Der Service muss ein Array sein.',
-            'is_user_customer.required' => 'Das Feld "is_user_customer" ist erforderlich.',
+            'customerAdminId.required'        => 'Der Kunden-Admin ist erforderlich.',
+            'organizationalUserId.required'   => 'Der Organisationsbenutzer ist erforderlich.',
+            'userId.required'                 => 'Die Benutzer-ID ist erforderlich.',
+            'userId.exists'                   => 'Die Benutzer-ID muss in der Benutzertabelle existieren.',
+            'services.required'               => 'Der Service ist erforderlich.',
+            'services.array'                  => 'Der Service muss ein Array sein.',
+            'is_user_customer.required'       => 'Das Feld "is_user_customer" ist erforderlich.',
             'is_user_organizational.required' => 'Das Feld "is_user_organizational" ist erforderlich.',
         ]);
 
-
-
         $user = User::find($request->userId);
-
 
         if ($request->has('services')) {
 
@@ -290,42 +279,38 @@ class AuthController extends Controller
 
         $user->save();
 
-
-
         if ($request->userId) {
             OrganizationalUser::create([
-                'customer_id' => $request->customerAdminId,
-                'user_id' => $request->organizationalUserId,
+                'customer_id'       => $request->customerAdminId,
+                'user_id'           => $request->organizationalUserId,
                 'organizational_id' => $request->userId,
             ]);
         }
 
-
         return response()->json([
             "message" => "User Linked Successfully.",
-            "user" => $user,
+            "user"    => $user,
 
         ], 200);
     }
 
-
     public function login(Request $request)
     {
         $request->validate([
-            'email' => 'required|email',
+            'email'    => 'required|email',
             'password' => 'required',
         ]);
-        $email = $request->email;
-        $password = $request->password;
+        $email        = $request->email;
+        $password     = $request->password;
         $translations = Translation::all();
         if (Auth::attempt(['email' => $email, 'password' => $password])) {
             // if (Auth::user()->hasVerifiedEmail()) {
-            $user = Auth::user();
+            $user  = Auth::user();
             $token = $user->createToken('user_token')->plainTextToken;
             return response()->json([
-                "message" => "Logged in successfully",
-                "user" => $user,
-                "token" => $token,
+                "message"         => "Logged in successfully",
+                "user"            => $user,
+                "token"           => $token,
                 "translationData" => $translations,
             ], 200);
         } else {
@@ -337,7 +322,7 @@ class AuthController extends Controller
     {
         $request->validate([
             'old_password' => 'required',
-            'password' => 'required|min:8|confirmed',
+            'password'     => 'required|min:8|confirmed',
         ]);
 
         $user = Auth::user();
@@ -348,20 +333,18 @@ class AuthController extends Controller
 
             return response()->json([
                 'message' => 'Password changed successfully',
-                'user' => $user,
+                'user'    => $user,
             ]);
         } else {
             return response()->json([
-                'message' => 'Invalid Old password.'
+                'message' => 'Invalid Old password.',
             ], 400);
         }
     }
 
-
     public function getuser($id)
     {
         $user = User::with('organization')->findOrFail($id);
-
 
         if ($user->is_user_organizational === 1 && $user->is_user_customer === 1) {
 
@@ -377,14 +360,13 @@ class AuthController extends Controller
             return response()->json(['message' => 'User or child organizational users not found!'], 404);
         }
 
-
-        if (!$customerId) {
+        if (! $customerId) {
             $services_ids = Service::all()->keyBy('id');
-            $services = Service::all();
+            $services     = Service::all();
         } else {
-            $customer = User::find($customerId);
+            $customer              = User::find($customerId);
             $customer_services_ids = $customer->services;
-            $services_ids = Service::whereIn('id', $customer_services_ids)->get();
+            $services_ids          = Service::whereIn('id', $customer_services_ids)->get();
             // Fetch all services once and key by ID for efficient lookups
             $services = Service::whereIn('id', $customer_services_ids)->get();
         }
@@ -399,14 +381,13 @@ class AuthController extends Controller
         return response()->json(['user' => $user, 'services' => $services, 'orgs' => $orgs], 200);
     }
 
-
     public function oldgetuser($id)
     {
-        $user = User::with('organization')->findOrFail($id);
+        $user         = User::with('organization')->findOrFail($id);
         $services_ids = Service::all()->keyBy('id');
 
         $services = Service::all();
-        $orgs = Organization::all();
+        $orgs     = Organization::all();
         if ($user->services) {
             $user->service_names = collect($user->services)->map(function ($serviceId) use ($services_ids) {
                 return $services_ids->get($serviceId)->name ?? '';
@@ -421,13 +402,12 @@ class AuthController extends Controller
         // return response()->json(['data', $id]);
         $request->validate([
             'services' => 'sometimes|array',
-            'email' => 'required|email|unique:users,email,' . $id
+            'email'    => 'required|email|unique:users,email,' . $id,
         ], [
             'email.required' => 'Die E-Mail-Adresse ist erforderlich.',
-            'email.email' => 'Bitte geben Sie eine gültige E-Mail-Adresse ein.',
-            'email.unique' => 'Diese E-Mail-Adresse wird bereits verwendet.'
+            'email.email'    => 'Bitte geben Sie eine gültige E-Mail-Adresse ein.',
+            'email.unique'   => 'Diese E-Mail-Adresse wird bereits verwendet.',
         ]);
-
 
         $user = User::findOrFail($id);
 
@@ -449,13 +429,12 @@ class AuthController extends Controller
         }
         if ($user->user_register_type === "out") {
             $user->user_register_type = "in";
-            $firstCustomerAdmin = User::with('customerUserWithNullOrganization')
+            $firstCustomerAdmin       = User::with('customerUserWithNullOrganization')
                 ->has('customerUserWithNullOrganization')
                 ->where(['is_user_customer' => 1, 'org_id' => null])
                 ->first();
 
-
-            $organizationalUser = User::find($firstCustomerAdmin->customerUserWithNullOrganization->user_id);
+            $organizationalUser  = User::find($firstCustomerAdmin->customerUserWithNullOrganization->user_id);
             $user->counter_limit = $organizationalUser->counter_limit;
         }
         $user->save();
@@ -494,9 +473,6 @@ class AuthController extends Controller
         return response()->json(['message' => 'User updated successfully', 'user' => $user]);
     }
 
-
-
-
     public function logout(Request $request)
     {
         $request->user()->tokens()->delete();
@@ -512,21 +488,21 @@ class AuthController extends Controller
         $user = User::find($id);
 
         // Check if the user exists
-        if (!$user) {
+        if (! $user) {
             return response()->json(['error' => 'User not found'], 404);
         }
 
         // Fetch the IDs of the child users and organizational users
         $childUserIds = OrganizationalUser::where('customer_id', $user->id)->pluck('user_id')->toArray();
-        $childOrgIds = OrganizationalUser::where('customer_id', $user->id)->pluck('organizational_id')->toArray();
+        $childOrgIds  = OrganizationalUser::where('customer_id', $user->id)->pluck('organizational_id')->toArray();
 
         // Delete child user records (those linked by user_id)
-        if (!empty($childUserIds)) {
+        if (! empty($childUserIds)) {
             User::whereIn('id', $childUserIds)->delete();
         }
 
         // Delete organizational user records (those linked by organizational_id)
-        if (!empty($childOrgIds)) {
+        if (! empty($childOrgIds)) {
             User::whereIn('id', $childOrgIds)->delete();
         }
 
@@ -539,21 +515,20 @@ class AuthController extends Controller
         return response()->json(['message' => 'User and related records deleted successfully'], 200);
     }
 
-
     public function getUserData()
     {
         // Get the currently authenticated user
         $user = Auth::user();
 
         // Check if user is authenticated
-        if (!$user) {
+        if (! $user) {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
         return response()->json([
-            'id' => $user->id,
-            'name' => $user->name,
-            'email' => $user->email
+            'id'    => $user->id,
+            'name'  => $user->name,
+            'email' => $user->email,
         ]);
     }
 
@@ -569,7 +544,7 @@ class AuthController extends Controller
         $services = Service::whereIn('id', $serviceIds)->pluck('name', 'id');
 
         // Fetch organization names and ids for each user based on their 'org_id'
-        $orgIds = $usersInOrganization->pluck('org_id')->unique();
+        $orgIds        = $usersInOrganization->pluck('org_id')->unique();
         $organizations = Organization::whereIn('id', $orgIds)->pluck('name', 'id');
 
         // Map the users and replace the service IDs with service names and include organization names
@@ -577,19 +552,19 @@ class AuthController extends Controller
             // Get the service names and ids for the user
             $userServices = collect($user->services)->map(function ($serviceId) use ($services) {
                 return [
-                    'id' => $serviceId,
+                    'id'   => $serviceId,
                     'name' => $services->get($serviceId),
                 ];
             });
 
             // Return the user data with service names and organization name and id
             return [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'services' => $userServices,
+                'id'           => $user->id,
+                'name'         => $user->name,
+                'email'        => $user->email,
+                'services'     => $userServices,
                 'organization' => [
-                    'id' => $user->org_id,
+                    'id'   => $user->org_id,
                     'name' => $organizations->get($user->org_id),
                 ],
             ];
@@ -616,7 +591,7 @@ class AuthController extends Controller
         $services = Service::whereIn('id', $serviceIds)->pluck('name', 'id');
 
         // Fetch organization names and ids for each user based on their 'org_id'
-        $orgIds = $usersInOrganization->pluck('org_id')->unique();
+        $orgIds        = $usersInOrganization->pluck('org_id')->unique();
         $organizations = Organization::whereIn('id', $orgIds)->get();
 
         // Map the users and replace the service IDs with service names and include organization names
@@ -624,19 +599,19 @@ class AuthController extends Controller
             // Get the service names and ids for the user
             $userServices = collect($user->services)->map(function ($serviceId) use ($services) {
                 return [
-                    'id' => $serviceId,
+                    'id'   => $serviceId,
                     'name' => $services->get($serviceId),
                 ];
             });
 
             // Return the user data with service names and organization name and id
             return [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'services' => $userServices,
+                'id'           => $user->id,
+                'name'         => $user->name,
+                'email'        => $user->email,
+                'services'     => $userServices,
                 'organization' => [
-                    'id' => $user->org_id,
+                    'id'   => $user->org_id,
                     'name' => $organizations->firstWhere('id', $user->org_id)->name ?? null,
                 ],
             ];
@@ -660,7 +635,7 @@ class AuthController extends Controller
         $services = Service::whereIn('id', $serviceIds)->pluck('name', 'id');
 
         // Fetch organization names and ids for each user based on their 'org_id'
-        $orgIds = $usersInOrganization->pluck('org_id')->unique();
+        $orgIds        = $usersInOrganization->pluck('org_id')->unique();
         $organizations = Organization::whereIn('id', $orgIds)->pluck('name', 'id');
 
         // Map the users and replace the service IDs with service names and include organization names
@@ -668,21 +643,21 @@ class AuthController extends Controller
             // Get the service names and ids for the user
             $userServices = collect($user->services)->map(function ($serviceId) use ($services) {
                 return [
-                    'id' => $serviceId,
+                    'id'   => $serviceId,
                     'name' => $services->get($serviceId),
                 ];
             });
 
             // Return the user data with service names and organization name and id
             return [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'services' => $userServices,
-                'is_customer' => $user->is_user_customer,
+                'id'             => $user->id,
+                'name'           => $user->name,
+                'email'          => $user->email,
+                'services'       => $userServices,
+                'is_customer'    => $user->is_user_customer,
                 'customer_admin' => $user->customerUsers,
-                'organization' => [
-                    'id' => $user->org_id,
+                'organization'   => [
+                    'id'   => $user->org_id,
                     'name' => $organizations->get($user->org_id),
                 ],
             ];
@@ -693,11 +668,6 @@ class AuthController extends Controller
             'organization_users' => $usersWithServiceNames,
         ], 200);
     }
-
-
-
-
-
 
     public function getAllOrganizationalUsersForCustomer($customerId)
     {
@@ -711,7 +681,7 @@ class AuthController extends Controller
         // If there are no users for this customer
         if ($createdUserIds->isEmpty()) {
             return response()->json([
-                'message' => 'No users found for this customer.'
+                'message' => 'No users found for this customer.',
             ], 200);
         }
 
@@ -730,10 +700,8 @@ class AuthController extends Controller
         $serviceNames = Service::whereIn('id', $serviceIds)->pluck('name', 'id');
 
         // Fetch organization names for each user based on org_id
-        $orgIds = $usersInOrganization->pluck('org_id');
+        $orgIds            = $usersInOrganization->pluck('org_id');
         $organizationNames = Organization::whereIn('id', $orgIds)->pluck('name', 'id');
-
-
 
         // Map the users and replace the service IDs with service names and include organization names
         $usersWithServiceNames = $usersInOrganization->map(callback: function ($user) use ($serviceNames, $organizationNames) {
@@ -742,39 +710,37 @@ class AuthController extends Controller
                 return $serviceNames->get($serviceId);
             });
 
-
-            // Fetch records where user_id matches the user_id of the found customer
+                                                                                  // Fetch records where user_id matches the user_id of the found customer
             $organizationaldata = OrganizationalUser::where('user_id', $user->id) // Use where for a single value
-                ->whereNotNull('organizational_id') // Ensure the organizational_id is not null
-                ->pluck('organizational_id'); // Pluck all organizational_ids
-            $organizationalCount = $organizationaldata->count(); // Call count() directly on the collection
+                ->whereNotNull('organizational_id')                                   // Ensure the organizational_id is not null
+                ->pluck('organizational_id');                                         // Pluck all organizational_ids
+            $organizationalCount = $organizationaldata->count();                  // Call count() directly on the collection
 
             // dd($organizationalCount,$user->id); // This will show the count of organizational_id value
-
-
 
             $documents = $this->countToolDocument($user->id);
             // Return the user data with service names, organization name, and is_user_organizational
             return [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'counter_limit' => $user->counter_limit,
-                'current_usage' => $user->current_usage,
-                'expiration_date' => $user->expiration_date,
-                'services' => $userServiceNames,
-                'serviceIds' => collect($user->services),
-                'dataProcessCount' => $documents['dataProcessCount'],
-                'documentsCount' => $documents['documentsCount'],
-                'contractSolutionCount' => $documents['contractSolutionCount'],
-                'freeDataProcessCount' => $documents['freeDataProcessCount'],
-                'cloneDataProcessCount' => $documents['cloneDataProcessCount'],
-                'werthenbachCount' => $documents['werthenbachCount'],
-                'scherenCount' => $documents['scherenCount'],
-                'sennheiserCount' => $documents['sennheiserCount'],
-                'verbundCount' => $documents['verbundCount'],
-                'allCount' => $documents['allCount'],
-                'organization_name' => $organizationNames->get($user->org_id),
+                'id'                     => $user->id,
+                'name'                   => $user->name,
+                'email'                  => $user->email,
+                'counter_limit'          => $user->counter_limit,
+                'current_usage'          => $user->current_usage,
+                'expiration_date'        => $user->expiration_date,
+                'services'               => $userServiceNames,
+                'serviceIds'             => collect($user->services),
+                'dataProcessCount'       => $documents['dataProcessCount'],
+                'documentsCount'         => $documents['documentsCount'],
+                'contractSolutionCount'  => $documents['contractSolutionCount'],
+                'freeDataProcessCount'   => $documents['freeDataProcessCount'],
+                'cloneDataProcessCount'  => $documents['cloneDataProcessCount'],
+                'werthenbachCount'       => $documents['werthenbachCount'],
+                'scherenCount'           => $documents['scherenCount'],
+                'sennheiserCount'        => $documents['sennheiserCount'],
+                'verbundCount'           => $documents['verbundCount'],
+                'demoDataProcessCount'   => $documents['demoDataProcessCount'],
+                'allCount'               => $documents['allCount'],
+                'organization_name'      => $organizationNames->get($user->org_id),
                 'is_user_organizational' => $user->is_user_organizational, // Add this
                 'all_organization_count' => $organizationalCount,
 

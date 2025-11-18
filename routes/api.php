@@ -3,27 +3,28 @@
 use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CloneDataProcessController;
-use App\Http\Controllers\Api\ServiceController;
-use App\Http\Controllers\Api\OrganizationController;
-use App\Http\Controllers\Api\TranslationController;
-use App\Http\Controllers\Api\FileController;
 use App\Http\Controllers\Api\ContractAutomationSolutionController;
 use App\Http\Controllers\Api\DataProcessController;
+use App\Http\Controllers\Api\DemoDataProcessController;
+use App\Http\Controllers\Api\DownloadLogController;
+use App\Http\Controllers\Api\FileController;
 use App\Http\Controllers\Api\InstructionController;
 use App\Http\Controllers\Api\InvoiceController;
-use App\Http\Controllers\Api\SettingController;
-use App\Http\Controllers\CustomerUserController;
-use App\Http\Controllers\Api\VoiceController;
-use App\Http\Controllers\Api\DownloadLogController;
-use App\Http\Controllers\Api\WerthenbachController;
-use App\Http\Controllers\UserController;
-use App\Http\Controllers\UsageController;
-use App\Http\Controllers\CustomerAdminController;
-use Illuminate\Support\Facades\Route;
-use App\Http\Middleware\UsageLimitMiddleware;
+use App\Http\Controllers\Api\OrganizationController;
 use App\Http\Controllers\Api\ScherenController;
 use App\Http\Controllers\Api\SennheiserController;
+use App\Http\Controllers\Api\ServiceController;
+use App\Http\Controllers\Api\SettingController;
+use App\Http\Controllers\Api\TranslationController;
 use App\Http\Controllers\Api\VerbundController;
+use App\Http\Controllers\Api\VoiceController;
+use App\Http\Controllers\Api\WerthenbachController;
+use App\Http\Controllers\CustomerAdminController;
+use App\Http\Controllers\CustomerUserController;
+use App\Http\Controllers\UsageController;
+use App\Http\Controllers\UserController;
+use App\Http\Middleware\UsageLimitMiddleware;
+use Illuminate\Support\Facades\Route;
 
 // Auth Routes
 Route::prefix('auth')->group(function () {
@@ -63,7 +64,7 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     // Route::get('/customer-requests', [CustomerRequestController::class, 'getRequests']);
     // Route::post('/customer-requests/{id}/approve', [CustomerRequestController::class, 'approveRequest']);
     // Route::post('/customer-requests/{id}/decline', [CustomerRequestController::class, 'declineRequest']);
-    
+
     // User Usage Routes
     Route::get('/user/{id}/document-count', [UsageController::class, 'getUserDocumentCount']);
     Route::get('/check-usage-count/{model}', [UsageController::class, 'getUsageCount']);
@@ -111,13 +112,17 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
 
     // DataProcess
     Route::post('/clone-data-process', [CloneDataProcessController::class, 'fetchDataProcess']);
+    Route::middleware([UsageLimitMiddleware::class . ':DemoDataProcess'])->group(function () {
+        Route::post('/demo-data-process', [DemoDataProcessController::class, 'fetchDataProcess']);
+    });
+    Route::post('/send-demo-processed-file', [DemoDataProcessController::class, 'sendProcessedFile']);
+    Route::get('/get-user-demo-processed-data', [DemoDataProcessController::class, 'getUserProcessedData']);
     Route::post('/data-process', [DataProcessController::class, 'fetchDataProcess']);
     Route::post('/send-processed-file', [DataProcessController::class, 'sendProcessedFile']);
     Route::get('/get-user-processed-data', [DataProcessController::class, 'getUserProcessedData']);
     Route::get('/get-all-processed-data-customer/{userId}', [DataProcessController::class, 'getAllProcessedDataByCustomer']);
     Route::get('/get-all-processed-data-organization/{userId}', [DataProcessController::class, 'getAllProcessedDataByOrganization']);
     Route::get('/get-all-processed-data-user/{userId}', [DataProcessController::class, 'getAllProcessedDataByUser']);
-
 
     // download log
     Route::post('/log-download', [DownloadLogController::class, 'logDownload']);
@@ -126,7 +131,6 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
 
     Route::post('/update-logo', [SettingController::class, 'updateLogo']);
     Route::get('/fetch-logo', [SettingController::class, 'fetchLogo']);
-
 
     Route::post('/addOrganizationalUser', [UserController::class, 'addOrganizationalUser']);
     Route::post('/register_user', [UserController::class, 'register_user']);

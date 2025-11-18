@@ -114,6 +114,10 @@ class User extends Authenticatable
         return $this->hasMany(Verbund::class, 'user_id');
     }
 
+    public function demodataprocesses()
+    {
+        return $this->hasMany(DemoDataProcess::class, 'user_id');
+    }
     public function customerUsers()
     {
         return $this->hasMany(OrganizationalUser::class, 'customer_id')->with('organizational');

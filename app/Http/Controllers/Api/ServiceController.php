@@ -8,6 +8,11 @@ use App\Models\ContractSolutions;
 use App\Models\DataProcess;
 use App\Models\Document;
 use App\Models\FreeDataProcess;
+use App\Models\DemoDataProcess;
+use App\Models\Werthenbach;
+use App\Models\Scheren;
+use App\Models\Sennheiser;
+use App\Models\Verbund;
 use App\Models\OrganizationalUser;
 use Illuminate\Http\Request;
 use App\Models\Service;
@@ -43,6 +48,11 @@ class ServiceController extends Controller
                 'clone_data_process' => CloneDataProcess::class,
                 'data_process' => DataProcess::class,
                 'free-data-process' => FreeDataProcess::class,
+                'demo_data_process' => DemoDataProcess::class,
+                'werthenbach' => Werthenbach::class,
+                'scheren' => Scheren::class,
+                'sennheiser' => Sennheiser::class,
+                'verbund' => Verbund::class,
             ];
             $updatedServices = Service::where('status', 1)->get()->map(function ($service) use ($services, $user) {
                 // Get the model class associated with the current service
@@ -98,6 +108,11 @@ class ServiceController extends Controller
                 'data_process' => DataProcess::class,
                 'clone_data_process' => CloneDataProcess::class,
                 'free-data-process' => FreeDataProcess::class,
+                'demo_data_process' => DemoDataProcess::class,
+                'werthenbach' => Werthenbach::class,
+                'scheren' => Scheren::class,
+                'sennheiser' => Sennheiser::class,
+                'verbund' => Verbund::class,
             ];
 
             // Loop through each service and check the count of the related models

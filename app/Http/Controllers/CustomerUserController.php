@@ -350,7 +350,7 @@ class CustomerUserController extends Controller
 
         // Preload necessary relationships for efficiency
         $users = User::whereIn('id', $uniqueIds)
-            ->with(['documents', 'contractSolutions', 'dataprocesses', 'freedataprocesses', 'clonedataprocesses', 'werthenbachs', 'scherens', 'sennheisers', 'verbunds'])
+            ->with(['documents', 'contractSolutions', 'dataprocesses', 'freedataprocesses', 'clonedataprocesses', 'werthenbachs', 'scherens', 'sennheisers', 'verbunds', 'demodataprocesses'])
             ->get();
 
         // Initialize counters
@@ -363,6 +363,7 @@ class CustomerUserController extends Controller
         $totalScherenCount = 0;
         $totalSennheiserCount = 0;
         $totalVerbundCount = 0;
+        $totalDemoDataProcessCount = 0;
         // Process each user
         foreach ($users as $user) {
             $userServices = $user->services ?? [];
@@ -394,6 +395,9 @@ class CustomerUserController extends Controller
             if (in_array('11', $userServices)) {
                 $totalVerbundCount += $user->verbunds->count();
             }
+            if (in_array('12', $userServices)) {
+                $totalDemoDataProcessCount += $user->demodataprocesses->count();
+            }
         }
 
         return response()->json([
@@ -406,6 +410,7 @@ class CustomerUserController extends Controller
             'total_scheren_count' => $totalScherenCount,
             'total_sennheiser_count' => $totalSennheiserCount,
             'total_verbund_count' => $totalVerbundCount,
+            'total_demo_data_process_count' => $totalDemoDataProcessCount,
         ]);
     }
 }

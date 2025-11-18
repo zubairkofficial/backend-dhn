@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\CloneDataProcess;
 use App\Models\ContractSolutions;
 use App\Models\DataProcess;
+use App\Models\DemoDataProcess;
 use App\Models\Werthenbach;
 use App\Models\Scheren;
 use App\Models\Sennheiser;
@@ -30,7 +31,8 @@ abstract class Controller
         $scherenCount = Scheren::whereIn('user_id', $normalUsers)->count();
         $sennheiserCount = Sennheiser::whereIn('user_id', $normalUsers)->count();
         $verbundCount = Verbund::whereIn('user_id', $normalUsers)->count();
-        $allCount = $dataProcessCount + $documentsCount + $contractSolutionCount + $freeDataProcessCount + $cloneDataProcessCount + $werthenbachCount + $scherenCount + $sennheiserCount + $verbundCount;
+        $demoDataProcessCount = DemoDataProcess::whereIn('user_id', $normalUsers)->count();
+        $allCount = $dataProcessCount + $documentsCount + $contractSolutionCount + $freeDataProcessCount + $cloneDataProcessCount + $werthenbachCount + $scherenCount + $sennheiserCount + $verbundCount + $demoDataProcessCount;
 
         return [
             'dataProcessCount' => $dataProcessCount,
@@ -42,6 +44,7 @@ abstract class Controller
             'scherenCount' => $scherenCount,
             'sennheiserCount' => $sennheiserCount,
             'verbundCount' => $verbundCount,
+            'demoDataProcessCount' => $demoDataProcessCount,
             'allCount' => $allCount,
         ];
 
@@ -61,7 +64,8 @@ abstract class Controller
         $scherenCount = Scheren::whereIn('user_id', $normalUsers)->count();
         $sennheiserCount = Sennheiser::whereIn('user_id', $normalUsers)->count();
         $verbundCount = Verbund::whereIn('user_id', $normalUsers)->count();
-        $allCount = $dataProcessCount + $documentsCount + $contractSolutionCount + $freeDataProcessCount + $cloneDataProcessCount + $werthenbachCount + $scherenCount + $sennheiserCount + $verbundCount;
+        $demoDataProcessCount = DemoDataProcess::whereIn('user_id', $normalUsers)->count();
+        $allCount = $dataProcessCount + $documentsCount + $contractSolutionCount + $freeDataProcessCount + $cloneDataProcessCount + $werthenbachCount + $scherenCount + $sennheiserCount + $verbundCount + $demoDataProcessCount;
 
         return [
             'dataProcessCount' => $dataProcessCount,
@@ -73,6 +77,7 @@ abstract class Controller
             'scherenCount' => $scherenCount,
             'sennheiserCount' => $sennheiserCount,
             'verbundCount' => $verbundCount,
+            'demoDataProcessCount' => $demoDataProcessCount,
             'allCount' => $allCount,
         ];
 
