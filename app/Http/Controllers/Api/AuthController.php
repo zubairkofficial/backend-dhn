@@ -770,4 +770,67 @@ class AuthController extends Controller
 
         return response()->json(['message' => 'Password reset successfully.']);
     }
+
+    public function searchAllUsers(Request $request)
+    {
+        $request->validate([
+            'search' => 'nullable|string|max:255',
+        ]);
+
+        $searchTerm = $request->input('search', '');
+
+        // Build query to search across all users (excluding admin users)
+        $query = User::where('user_type', '!=', 1)
+            ->with('organization');
+
+        // Apply search filter if provided
+        if (! empty($searchTerm)) {
+            $query->where(function ($q) use ($searchTerm) {
+                $q->where('name', 'like', '%' . $searchTerm . '%')
+                    ->orWhere('email', 'like', '%' . $searchTerm . '%');
+            });
+        }
+
+        $users = $query->get();
+
+        // Get all service IDs and organization IDs
+        $serviceIds = $users->pluck('services')->flatten()->unique();
+        $orgIds     = $users->pluck('org_id')->unique();
+
+        // Fetch service names
+        $serviceNames  = Service::whereIn('id', $serviceIds)->pluck('name', 'id');
+        $organizations = Organization::whereIn('id', $orgIds)->pluck('name', 'id');
+
+        // Map users with service names and organization names
+        $usersWithDetails = $users->map(function ($user) use ($serviceNames, $organizations) {
+            // Get service names for the user
+            $userServiceNames = collect($user->services)->map(function ($serviceId) use ($serviceNames) {
+                return $serviceNames->get($serviceId);
+            })->filter()->values();
+
+            // Determine user type
+            $userType = 'normal';
+            if ($user->is_user_customer == 1) {
+                $userType = 'customer_admin';
+            } elseif ($user->is_user_organizational == 1) {
+                $userType = 'organizational';
+            }
+
+            return [
+                'id'                     => $user->id,
+                'name'                   => $user->name,
+                'email'                  => $user->email,
+                'services'               => $userServiceNames,
+                'organization_name'      => $organizations->get($user->org_id),
+                'user_type'              => $userType,
+                'is_user_customer'       => $user->is_user_customer,
+                'is_user_organizational' => $user->is_user_organizational,
+            ];
+        });
+
+        return response()->json([
+            'users' => $usersWithDetails,
+            'total' => $usersWithDetails->count(),
+        ], 200);
+    }
 }

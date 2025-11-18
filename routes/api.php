@@ -59,6 +59,7 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::delete('delete/{id}', [AuthController::class, 'delete']);
     Route::get('/getUserData', [AuthController::class, 'getUserData']);
     Route::get('/getNonOrganizationalUsers', [AuthController::class, 'getNonOrganizationalUsers']);
+    Route::get('/search-all-users', [AuthController::class, 'searchAllUsers']);
     Route::get('dashboardInfo', [AdminController::class, 'dashboardInfo']);
     Route::post('/reset-user-password/{id}', [AuthController::class, 'resetUserPassword']);
     // Route::get('/customer-requests', [CustomerRequestController::class, 'getRequests']);
