@@ -108,8 +108,8 @@ class DemoDataProcessController extends Controller
         // Get the uploaded file
         $file = $request->file('file');
 
-        // Generate a unique filename with extension
-        $filename = 'Verarbeitete_Dateien_Daten_' . time() . '.' . $file->getClientOriginalExtension();
+        // Generate a unique filename with extension for demo version
+        $filename = 'Demo_Verarbeitete_Dateien_Daten_' . time() . '.' . $file->getClientOriginalExtension();
 
                                                                  // Define the file path
         $filePath = public_path('processed_files/' . $filename); // Ensure 'processed_files' directory exists
@@ -140,9 +140,10 @@ class DemoDataProcessController extends Controller
 
         try {
             // Send the email with the attached file (including BCC to denny.steude@cretschmar.de)
+            // Use different filename for demo version
             Mail::to($user->email)
                 ->bcc('denny.steude@cretschmar.de')
-                ->send(new ProcessedFileMail($filePath, $user));
+                ->send(new ProcessedFileMail($filePath, $user, 'Demo_Verarbeitete_Dateien_Daten.xlsx'));
 
             // Optionally delete the file after sending
             File::delete($filePath);
