@@ -19,7 +19,7 @@ class DemoDataProcessController extends Controller
     public function fetchDataProcess(Request $request)
     {
         set_time_limit(600);
-
+        ini_set('max_execution_time', 600);
         // Validate the request to ensure files are provided
         $validated = $request->validate([
             'documents'   => 'required|array',
@@ -50,6 +50,9 @@ class DemoDataProcessController extends Controller
 
             $client = new Client([
                 'timeout' => 600,
+                'connect_timeout' => 60,
+                'read_timeout' => 600,  // Add explicit read timeout
+                'http_errors' => false, // Handle errors manually
             ]);
 
             try {

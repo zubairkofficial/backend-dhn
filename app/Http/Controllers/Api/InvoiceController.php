@@ -101,7 +101,6 @@ class InvoiceController extends Controller
     public function extractInvoiceData(Request $request)
     {
         try {
-            set_time_limit(0);
             $request->validate([
                 'content' => 'nullable|string',
                 'pdf' => 'nullable|file',
@@ -184,7 +183,7 @@ class InvoiceController extends Controller
         $postInvoices = PostInvoice::when($fromDate && $endDate, function ($query) use ($fromDate, $endDate) {
             $query->whereBetween('date', [$fromDate, $endDate]);
         })->get();
-    
+
         $matchedInvoices = [];
         foreach ($postInvoices as $postInvoice) {
             foreach ($records as $latestInvoice) {
@@ -194,12 +193,12 @@ class InvoiceController extends Controller
                 }
             }
         }
-    
-        return empty($matchedInvoices) 
+
+        return empty($matchedInvoices)
             ? response()->json(['message' => 'No matched invoices found.'], 200)
             : response()->json(['jsonresult' => $matchedInvoices]);
     }
-    
+
 
     public function postInvoice2()
     {

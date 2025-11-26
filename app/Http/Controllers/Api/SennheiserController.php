@@ -18,7 +18,7 @@ class SennheiserController extends Controller
     public function fetchSennheiser(Request $request)
     {
         set_time_limit(600);
-
+        ini_set('max_execution_time', 600);
         $request->validate([
             'documents' => 'required|array',
             'documents.*' => 'file',
@@ -48,6 +48,9 @@ class SennheiserController extends Controller
 
             $client = new Client([
                 'timeout' => 600,
+                'connect_timeout' => 60,
+                'read_timeout' => 600,  // Add explicit read timeout
+                'http_errors' => false, // Handle errors manually
             ]);
 
             try {

@@ -20,6 +20,7 @@ class ContractAutomationSolutionController extends Controller
     {
         // Increase maximum execution time
         set_time_limit(600); // 10 minutes
+        ini_set('max_execution_time', 600);
 
         // Validate that the document and doctype are present in the request
         $validated = $request->validate([
@@ -54,6 +55,9 @@ class ContractAutomationSolutionController extends Controller
         // Create a Guzzle client with increased timeout
         $client = new Client([
             'timeout' => 600,
+            'connect_timeout' => 60,
+            'read_timeout' => 600,  // Add explicit read timeout
+            'http_errors' => false, // Handle errors manually
        ]);
 
         try {
