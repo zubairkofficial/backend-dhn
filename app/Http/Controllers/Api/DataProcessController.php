@@ -90,16 +90,33 @@ class DataProcessController extends Controller
                         'file_name' => $fileName,
                         'data' => base64_encode(json_encode($responseData)),
                         'user_id' => $userId,
+                        'status' => 'success',
                     ]);
 
                     $responses[] =  $responseData;
                 } else {
-                    return response()->json(['message' => 'Failed to upload file', 'error' => 'Unexpected status code'], $response->getStatusCode());
+                    // Save error to database
+                    $errorMessage = 'Unexpected status code: ' . $response->getStatusCode();
+                    DataProcess::create([
+                        'file_name' => $fileName,
+                        'data' => null,
+                        'user_id' => $userId,
+                        'status' => 'error',
+                        'error_message' => $errorMessage,
+                    ]);
+                    $responses[] = ['error' => $errorMessage, 'file_name' => $fileName];
                 }
             } catch (RequestException $e) {
-                // Handle the error response
+                // Handle the error response and save to database
                 $errorResponse = $e->hasResponse() ? $e->getResponse()->getBody()->getContents() : $e->getMessage();
-                return response()->json(['message' => 'Failed to upload file', 'error' => $errorResponse], $e->getCode() ?: 400);
+                DataProcess::create([
+                    'file_name' => $fileName,
+                    'data' => null,
+                    'user_id' => $userId,
+                    'status' => 'error',
+                    'error_message' => $errorResponse,
+                ]);
+                $responses[] = ['error' => $errorResponse, 'file_name' => $fileName];
             }
         }
         // Return a successful response with the combined data
