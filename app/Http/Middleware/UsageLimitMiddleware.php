@@ -8,6 +8,10 @@ use App\Models\DemoDataProcess;
 use App\Models\Document;
 use App\Models\FreeDataProcess;
 use App\Models\OrganizationalUser;
+use App\Models\Scheren;
+use App\Models\Sennheiser;
+use App\Models\Verbund;
+use App\Models\Werthenbach;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -41,6 +45,64 @@ class UsageLimitMiddleware
                                                        // Get the user's counter limit (ensure it's a valid number)
         $userCounterLimit = $user->counter_limit ?? 0; // default to 0 if null
 
+        // Handle "out" user type - count directly from user_id
+        if ($user->user_register_type == "out") {
+            // Dynamically check usage for the specified model
+            switch ($model) {
+                case 'Document':
+                    $usageCount = Document::where('user_id', $user->id)->count();
+                    break;
+
+                case 'ContractSolutions':
+                    $usageCount = ContractSolutions::where('user_id', $user->id)->count();
+                    break;
+
+                case 'DataProcess':
+                    $usageCount = DataProcess::where('user_id', $user->id)->count();
+                    break;
+
+                case 'FreeDataProcess':
+                    $usageCount = FreeDataProcess::where('user_id', $user->id)->count();
+                    break;
+
+                case 'CloneDataProcess':
+                    $usageCount = CloneDataProcess::where('user_id', $user->id)->count();
+                    break;
+
+                case 'Werthenbach':
+                    $usageCount = Werthenbach::where('user_id', $user->id)->count();
+                    break;
+
+                case 'Scheren':
+                    $usageCount = Scheren::where('user_id', $user->id)->count();
+                    break;
+
+                case 'Sennheiser':
+                    $usageCount = Sennheiser::where('user_id', $user->id)->count();
+                    break;
+
+                case 'Verbund':
+                    $usageCount = Verbund::where('user_id', $user->id)->count();
+                    break;
+
+                case 'DemoDataProcess':
+                    $usageCount = DemoDataProcess::where('user_id', $user->id)->count();
+                    break;
+
+                default:
+                    return response()->json(['status' => 'error', 'message' => 'Invalid model specified'], 400);
+            }
+
+            // Check if the usage count exceeds the user's counter limit
+            if ($usageCount >= $userCounterLimit) {
+                return response()->json(['status' => 'error', 'message' => 'usage limit exceeded'], 403);
+            }
+
+            // Allow the request to continue if conditions are met
+            return $next($request);
+        }
+
+        // Handle organizational users - count from organizational user IDs
         // Get the organizational IDs associated with the authenticated user
         $organizationalUserId = OrganizationalUser::where('user_id', Auth::user()->id)
             ->first();
@@ -64,12 +126,12 @@ class UsageLimitMiddleware
 
         // Dynamically check usage for the specified model
         switch ($model) {
-            case 'ContractSolutions':
-                $usageCount = ContractSolutions::whereIn('user_id', $organizationalUserIds)->count();
-                break;
-
             case 'Document':
                 $usageCount = Document::whereIn('user_id', $organizationalUserIds)->count();
+                break;
+
+            case 'ContractSolutions':
+                $usageCount = ContractSolutions::whereIn('user_id', $organizationalUserIds)->count();
                 break;
 
             case 'DataProcess':
@@ -82,6 +144,22 @@ class UsageLimitMiddleware
 
             case 'CloneDataProcess':
                 $usageCount = CloneDataProcess::whereIn('user_id', $organizationalUserIds)->count();
+                break;
+
+            case 'Werthenbach':
+                $usageCount = Werthenbach::whereIn('user_id', $organizationalUserIds)->count();
+                break;
+
+            case 'Scheren':
+                $usageCount = Scheren::whereIn('user_id', $organizationalUserIds)->count();
+                break;
+
+            case 'Sennheiser':
+                $usageCount = Sennheiser::whereIn('user_id', $organizationalUserIds)->count();
+                break;
+
+            case 'Verbund':
+                $usageCount = Verbund::whereIn('user_id', $organizationalUserIds)->count();
                 break;
 
             case 'DemoDataProcess':
