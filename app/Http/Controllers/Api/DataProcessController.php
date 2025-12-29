@@ -1,21 +1,20 @@
 <?php
-
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\DataProcess;
-use App\Models\User;
-use App\Models\OrganizationalUser;
-use Illuminate\Http\Request;
-use GuzzleHttp\Client;
-use GuzzleHttp\Exception\RequestException;
-use Illuminate\Support\Facades\Log;
 use App\Mail\ProcessedFileMail;
+use App\Models\DataProcess;
+use App\Models\OrganizationalUser;
+use App\Models\User;
 use App\Services\CalculateUsage;
 use App\Services\SendNotifyMail;
+use GuzzleHttp\Client;
+use GuzzleHttp\Exception\RequestException;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 class DataProcessController extends Controller
 {
@@ -25,45 +24,43 @@ class DataProcessController extends Controller
         ini_set('max_execution_time', 600);
         // Validate the request to ensure files are provided
         $validated = $request->validate([
-            'documents' => 'required|array',
+            'documents'   => 'required|array',
             'documents.*' => 'file',
         ]);
 
-        $calculateUsage = new CalculateUsage();
-        $usage = $calculateUsage->calculateUsage(DataProcess::class);
-        $status = $usage['status'];
+        $calculateUsage              = new CalculateUsage();
+        $usage                       = $calculateUsage->calculateUsage(DataProcess::class);
+        $status                      = $usage['status'];
         $details['userCounterLimit'] = $usage['userCounterLimit'];
-        $details['usageCount'] = $usage['usageCount'];
-        $details['serviceName'] = $usage['serviceName'];
-        $user = Auth::user();
+        $details['usageCount']       = $usage['usageCount'];
+        $details['serviceName']      = $usage['serviceName'];
+        $user                        = Auth::user();
         if ($status) {
             $sendNofication = new SendNotifyMail();
             $sendNofication->sendMail($user->email, $details);
         }
 
-
-        $userId = $request->input('user_id');
+        $userId    = $request->input('user_id');
         $responses = [];
 
         foreach ($request->file('documents') as $file) {
             $fileName = $file->getClientOriginalName();
-            $url = 'http://20.218.155.138/datasheet_process';
-
+            $url      = 'http://20.218.155.138/datasheet_process';
 
             $username = 'api_user';
             $password = 'g*f>G31B=9D7';
 
             $client = new Client([
-                'timeout' => 600,
+                'timeout'         => 600,
                 'connect_timeout' => 60,
-                'read_timeout' => 600,  // Add explicit read timeout
-                'http_errors' => false, // Handle errors manually
+                'read_timeout'    => 600,   // Add explicit read timeout
+                'http_errors'     => false, // Handle errors manually
             ]);
 
             try {
                 // Make the POST request with Basic Auth and multipart/form-data
                 $response = $client->post($url, [
-                    'auth' => [$username, $password],
+                    'auth'      => [$username, $password],
                     'multipart' => [
                         [
                             'name'     => 'username',
@@ -76,7 +73,7 @@ class DataProcessController extends Controller
                         [
                             'name'     => 'document',
                             'contents' => fopen($file->getPathname(), 'r'),
-                            'filename' => $fileName
+                            'filename' => $fileName,
                         ],
                     ],
                 ]);
@@ -88,20 +85,20 @@ class DataProcessController extends Controller
 
                     DataProcess::create([
                         'file_name' => $fileName,
-                        'data' => base64_encode(json_encode($responseData)),
-                        'user_id' => $userId,
-                        'status' => 'success',
+                        'data'      => base64_encode(json_encode($responseData)),
+                        'user_id'   => $userId,
+                        'status'    => 'success',
                     ]);
 
-                    $responses[] =  $responseData;
+                    $responses[] = $responseData;
                 } else {
                     // Save error to database
                     $errorMessage = 'Unexpected status code: ' . $response->getStatusCode();
                     DataProcess::create([
-                        'file_name' => $fileName,
-                        'data' => null,
-                        'user_id' => $userId,
-                        'status' => 'error',
+                        'file_name'     => $fileName,
+                        'data'          => null,
+                        'user_id'       => $userId,
+                        'status'        => 'error',
                         'error_message' => $errorMessage,
                     ]);
                     $responses[] = ['error' => $errorMessage, 'file_name' => $fileName];
@@ -110,10 +107,10 @@ class DataProcessController extends Controller
                 // Handle the error response and save to database
                 $errorResponse = $e->hasResponse() ? $e->getResponse()->getBody()->getContents() : $e->getMessage();
                 DataProcess::create([
-                    'file_name' => $fileName,
-                    'data' => null,
-                    'user_id' => $userId,
-                    'status' => 'error',
+                    'file_name'     => $fileName,
+                    'data'          => null,
+                    'user_id'       => $userId,
+                    'status'        => 'error',
                     'error_message' => $errorResponse,
                 ]);
                 $responses[] = ['error' => $errorResponse, 'file_name' => $fileName];
@@ -127,7 +124,7 @@ class DataProcessController extends Controller
     {
         // Validate the incoming request
         $request->validate([
-            'file' => 'required|file|mimes:xlsx,pdf|max:20480' // Allowed types and size limit
+            'file' => 'required|file|mimes:xlsx,pdf|max:20480', // Allowed types and size limit
         ]);
 
         // Get the uploaded file
@@ -136,11 +133,11 @@ class DataProcessController extends Controller
         // Generate a unique filename with extension
         $filename = 'Verarbeitete_Dateien_Daten_' . time() . '.' . $file->getClientOriginalExtension();
 
-        // Define the file path
+                                                                 // Define the file path
         $filePath = public_path('processed_files/' . $filename); // Ensure 'processed_files' directory exists
 
         $processedFilesDir = public_path('processed_files');
-        if (!file_exists($processedFilesDir)) {
+        if (! file_exists($processedFilesDir)) {
             mkdir($processedFilesDir, 0755, true);
         }
         // Move the file to the desired directory
@@ -152,14 +149,14 @@ class DataProcessController extends Controller
         }
 
         // Verify that the file was moved successfully
-        if (!file_exists($filePath)) {
+        if (! file_exists($filePath)) {
             return response()->json(['error' => 'File could not be saved.'], 500);
         }
 
         // Get the authenticated user
         $user = Auth::user();
 
-        if (!$user) {
+        if (! $user) {
             return response()->json(['error' => 'Unauthenticated.'], 401);
         }
 
@@ -183,8 +180,13 @@ class DataProcessController extends Controller
     {
         // Ensure the user is authenticated
         $user = Auth::user();
-        if (!$user) {
+        if (! $user) {
             return response()->json(['error' => 'Unauthenticated.'], 401);
+        }
+
+        // Check if history is disabled for this user
+        if (! $user->history_enabled) {
+            return response()->json(['data' => []]);
         }
 
         // Initialize user IDs
@@ -195,13 +197,13 @@ class DataProcessController extends Controller
         if ($userAdminRecords->isNotEmpty()) {
             // Add User Admin IDs
             $userAdminIds = $userAdminRecords->pluck('user_id')->toArray();
-            $userIds = array_merge($userIds, $userAdminIds);
+            $userIds      = array_merge($userIds, $userAdminIds);
 
             // Add Organizational User IDs under User Admins
             $orgUserRecords = OrganizationalUser::whereIn('user_id', $userAdminIds)->get();
             if ($orgUserRecords->isNotEmpty()) {
                 $orgUserIds = $orgUserRecords->pluck('organizational_id')->toArray();
-                $userIds = array_merge($userIds, $orgUserIds);
+                $userIds    = array_merge($userIds, $orgUserIds);
             }
         }
 
@@ -217,13 +219,12 @@ class DataProcessController extends Controller
                 ->get();
             if ($orgUserRecords->isNotEmpty()) {
                 $orgUserIds = $orgUserRecords->pluck('organizational_id')->toArray();
-                $userIds = array_merge($userIds, $orgUserIds);
+                $userIds    = array_merge($userIds, $orgUserIds);
             }
         }
 
         // Ensure unique user IDs to avoid duplication
         $userIds = array_unique($userIds);
-
 
         // Fetch all processed data for the determined user IDs
         $processedData = DataProcess::whereIn('user_id', $userIds)
@@ -238,7 +239,7 @@ class DataProcessController extends Controller
         // Return the processed data as a JSON response
         return response()->json([
             'message' => 'Data fetched successfully',
-            'data' => $processedData,
+            'data'    => $processedData,
         ]);
     }
     // this will use by super admin
@@ -261,14 +262,13 @@ class DataProcessController extends Controller
             $orgUserRecords = OrganizationalUser::whereIn('user_id', $userAdminIds)->get();
             if ($orgUserRecords->isNotEmpty()) {
                 $orgUserIds = $orgUserRecords->pluck('organizational_id')->toArray();
-                $userIds = array_merge($userIds, $orgUserIds);
+                $userIds    = array_merge($userIds, $orgUserIds);
             }
         }
 
         $userIds = array_filter(array_unique($userIds));
         $userIds = array_map('intval', $userIds); // Convert all values to integers
-        // dd($userIds);
-
+                                                  // dd($userIds);
 
         // Fetch user details (id and name) for filters
         $userData = User::whereIn('id', $userIds)->select('id', 'name')->get();
@@ -288,8 +288,8 @@ class DataProcessController extends Controller
         // Return both processed data and user data for frontend
         return response()->json([
             'message' => 'Data fetched successfully',
-            'data' => $processedData,  // Processed data
-            'users' => $userData,      // User data for filters
+            'data'    => $processedData, // Processed data
+            'users'   => $userData,      // User data for filters
         ]);
     }
     public function getAllProcessedDataByOrganization($userId)
@@ -310,13 +310,13 @@ class DataProcessController extends Controller
                 ->get();
             if ($orgUserRecords->isNotEmpty()) {
                 $orgUserIds = $orgUserRecords->pluck('organizational_id')->toArray();
-                $userIds = array_merge($userIds, $orgUserIds);
+                $userIds    = array_merge($userIds, $orgUserIds);
             }
         }
 
         $userIds = array_filter(array_unique($userIds));
         $userIds = array_map('intval', $userIds); // Convert all values to integers
-        // dd($userIds);
+                                                  // dd($userIds);
         $userData = User::whereIn('id', $userIds)->select('id', 'name')->get();
 
         $processedData = DataProcess::whereIn('user_id', $userIds)
@@ -333,8 +333,8 @@ class DataProcessController extends Controller
         // Return both processed data and user data for frontend
         return response()->json([
             'message' => 'Data fetched successfully',
-            'data' => $processedData,  // Processed data
-            'users' => $userData,      // User data for filters
+            'data'    => $processedData, // Processed data
+            'users'   => $userData,      // User data for filters
         ]);
     }
     public function getAllProcessedDataByUser($userId)
@@ -356,7 +356,7 @@ class DataProcessController extends Controller
                 ->get();
             if ($orgUserRecords->isNotEmpty()) {
                 $orgUserIds = $orgUserRecords->pluck('organizational_id')->toArray();
-                $userIds = array_merge($userIds, $orgUserIds);
+                $userIds    = array_merge($userIds, $orgUserIds);
             }
         }
         // Ensure unique user IDs to avoid duplication
@@ -378,8 +378,8 @@ class DataProcessController extends Controller
         // Return both processed data and user data for frontend
         return response()->json([
             'message' => 'Data fetched successfully',
-            'data' => $processedData,  // Processed data
-            'users' => $userData,      // User data for filters
+            'data'    => $processedData, // Processed data
+            'users'   => $userData,      // User data for filters
         ]);
     }
 }

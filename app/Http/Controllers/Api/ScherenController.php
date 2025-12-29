@@ -102,6 +102,10 @@ class ScherenController extends Controller
         if (!$user) {
             return response()->json(['error' => 'Unauthenticated.'], 401);
         }
+        if (!$user->history_enabled) {
+            return response()->json(['data' => []]);
+        }
+        
         $userIds = [$user->id];
 
         $userAdminRecords = OrganizationalUser::where('customer_id', $user->id)->get();

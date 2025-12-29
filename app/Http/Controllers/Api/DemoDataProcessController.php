@@ -166,6 +166,11 @@ class DemoDataProcessController extends Controller
             return response()->json(['error' => 'Unauthenticated.'], 401);
         }
 
+        // Check if history is disabled for this user
+        if (! $user->history_enabled) {
+            return response()->json(['data' => []]);
+        }
+
         // Initialize user IDs
         $userIds = [$user->id];
 
