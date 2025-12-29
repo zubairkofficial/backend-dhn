@@ -104,7 +104,7 @@ class VerbundController extends Controller
         if (!$user->history_enabled) {
             return response()->json(['data' => []]);
         }
-        
+
         $userIds = [$user->id];
 
         $userAdminRecords = OrganizationalUser::where('customer_id', $user->id)->get();
@@ -186,8 +186,6 @@ class VerbundController extends Controller
     }
     public function getAllVerbundDataByOrganization($userId)
     {
-
-        $userId = $userId;
         $userIds = [$userId];
         $customerRecord = OrganizationalUser::where('user_id', $userId)->first();
         if ($customerRecord) {
@@ -224,9 +222,6 @@ class VerbundController extends Controller
     }
     public function getAllVerbundDataByUser($userId)
     {
-
-        $userId = $userId;
-
         $userIds = [$userId];
 
         $customerRecord = OrganizationalUser::where('user_id', $userId)->first();

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Mail\ProcessedFileMail;
 use App\Models\DemoDataProcess;
+use App\Models\OrganizationalUser;
 use App\Services\CalculateUsage;
 use App\Services\SendNotifyMail;
 use GuzzleHttp\Client;
@@ -175,14 +176,14 @@ class DemoDataProcessController extends Controller
         $userIds = [$user->id];
 
         // Check if the user is a Customer Admin
-        $userAdminRecords = \App\Models\OrganizationalUser::where('customer_id', $user->id)->get();
+        $userAdminRecords = OrganizationalUser::where('customer_id', $user->id)->get();
         if ($userAdminRecords->isNotEmpty()) {
             // Add User Admin IDs
             $userAdminIds = $userAdminRecords->pluck('user_id')->toArray();
             $userIds      = array_merge($userIds, $userAdminIds);
 
             // Add Organizational User IDs under User Admins
-            $orgUserRecords = \App\Models\OrganizationalUser::whereIn('user_id', $userAdminIds)->get();
+            $orgUserRecords = OrganizationalUser::whereIn('user_id', $userAdminIds)->get();
             if ($orgUserRecords->isNotEmpty()) {
                 $orgUserIds = $orgUserRecords->pluck('organizational_id')->toArray();
                 $userIds    = array_merge($userIds, $orgUserIds);
@@ -190,13 +191,13 @@ class DemoDataProcessController extends Controller
         }
 
         // Check if the user is a User Admin
-        $customerRecord = \App\Models\OrganizationalUser::where('user_id', $user->id)->first();
+        $customerRecord = OrganizationalUser::where('user_id', $user->id)->first();
         if ($customerRecord) {
             // Add the Customer Admin ID
             $userIds[] = $customerRecord->customer_id;
 
             // Add Organizational User IDs under the User Admin
-            $orgUserRecords = \App\Models\OrganizationalUser::where('customer_id', $customerRecord->customer_id)
+            $orgUserRecords = OrganizationalUser::where('customer_id', $customerRecord->customer_id)
                 ->where('user_id', $user->id)
                 ->get();
             if ($orgUserRecords->isNotEmpty()) {

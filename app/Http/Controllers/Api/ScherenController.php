@@ -105,7 +105,7 @@ class ScherenController extends Controller
         if (!$user->history_enabled) {
             return response()->json(['data' => []]);
         }
-        
+
         $userIds = [$user->id];
 
         $userAdminRecords = OrganizationalUser::where('customer_id', $user->id)->get();
@@ -187,8 +187,6 @@ class ScherenController extends Controller
     }
     public function getAllScherenDataByOrganization($userId)
     {
-
-        $userId = $userId;
         $userIds = [$userId];
         $customerRecord = OrganizationalUser::where('user_id', $userId)->first();
         if ($customerRecord) {
@@ -225,9 +223,6 @@ class ScherenController extends Controller
     }
     public function getAllScherenDataByUser($userId)
     {
-
-        $userId = $userId;
-
         $userIds = [$userId];
 
         $customerRecord = OrganizationalUser::where('user_id', $userId)->first();

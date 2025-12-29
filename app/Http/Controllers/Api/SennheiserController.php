@@ -101,7 +101,7 @@ class SennheiserController extends Controller
         if (!$user) {
             return response()->json(['error' => 'Unauthenticated.'], 401);
         }
-        
+
         if (!$user->history_enabled) {
             return response()->json(['data' => []]);
         }
@@ -187,8 +187,6 @@ class SennheiserController extends Controller
     }
     public function getAllSennheiserDataByOrganization($userId)
     {
-
-        $userId = $userId;
         $userIds = [$userId];
         $customerRecord = OrganizationalUser::where('user_id', $userId)->first();
         if ($customerRecord) {
@@ -225,9 +223,6 @@ class SennheiserController extends Controller
     }
     public function getAllSennheiserDataByUser($userId)
     {
-
-        $userId = $userId;
-
         $userIds = [$userId];
 
         $customerRecord = OrganizationalUser::where('user_id', $userId)->first();

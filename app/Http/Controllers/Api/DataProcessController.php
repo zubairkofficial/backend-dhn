@@ -295,7 +295,6 @@ class DataProcessController extends Controller
     public function getAllProcessedDataByOrganization($userId)
     {
 
-        $userId = $userId;
         // Initialize user IDs
         $userIds = [$userId];
         // Check if the user is a User Admin
@@ -339,9 +338,6 @@ class DataProcessController extends Controller
     }
     public function getAllProcessedDataByUser($userId)
     {
-
-        $userId = $userId;
-
         // Initialize user IDs
         $userIds = [$userId];
 
