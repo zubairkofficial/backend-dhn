@@ -22,6 +22,29 @@ class AdminController extends Controller
         return response()->json(['users'=>$users], 200);
     }
 
-    
+    public function toggleUserHistory(Request $request, $userId)
+    {
+        $request->validate([
+            'history_enabled' => 'required|boolean'
+        ]);
+
+        $user = User::findOrFail($userId);
+        $user->history_enabled = $request->history_enabled;
+        $user->save();
+
+        return response()->json([
+            'message' => 'User history setting updated successfully',
+            'user' => $user
+        ], 200);
+    }
+
+    public function getUserHistoryStatus($userId)
+    {
+        $user = User::findOrFail($userId);
+        return response()->json([
+            'history_enabled' => $user->history_enabled
+        ], 200);
+    }
+
 
 }

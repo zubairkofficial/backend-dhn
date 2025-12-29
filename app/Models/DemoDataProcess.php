@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class DemoDataProcess extends Model
 {
     use HasFactory;
-    protected $fillable = ['file_name', 'data', 'user_id'];
+    protected $fillable = ['file_name', 'data', 'user_id', 'status', 'error_message'];
 
     public function user()
     {

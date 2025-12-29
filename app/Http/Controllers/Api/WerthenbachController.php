@@ -1,20 +1,17 @@
 <?php
-
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use App\Mail\ProcessedFileMail;
+use App\Models\OrganizationalUser;
+use App\Models\User;
+use App\Models\Werthenbach;
 use App\Services\CalculateUsage;
 use App\Services\SendNotifyMail;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\File;
-use App\Models\User;
-use App\Models\OrganizationalUser;
-use App\Models\Werthenbach;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\File;
 
 class WerthenbachController extends Controller
 {
@@ -24,17 +21,17 @@ class WerthenbachController extends Controller
         ini_set('max_execution_time', 600);
         // Validate the request to ensure files are provided
         $validated = $request->validate([
-            'documents' => 'required|array',
+            'documents'   => 'required|array',
             'documents.*' => 'file',
         ]);
 
-        $calculateUsage = new CalculateUsage();
-        $usage = $calculateUsage->calculateUsage(Werthenbach::class);
-        $status = $usage['status'];
+        $calculateUsage              = new CalculateUsage();
+        $usage                       = $calculateUsage->calculateUsage(Werthenbach::class);
+        $status                      = $usage['status'];
         $details['userCounterLimit'] = $usage['userCounterLimit'];
-        $details['usageCount'] = $usage['usageCount'];
-        $details['serviceName'] = $usage['serviceName'];
-        $user = Auth::user();
+        $details['usageCount']       = $usage['usageCount'];
+        $details['serviceName']      = $usage['serviceName'];
+        $user                        = Auth::user();
         if ($status) {
             $sendNofication = new SendNotifyMail();
             $sendNofication->sendMail($user->email, $details);
@@ -42,32 +39,31 @@ class WerthenbachController extends Controller
 
         $user = Auth::user();
 
-        if (!$user) {
+        if (! $user) {
             return response()->json(['error' => 'Unauthenticated.'], 401);
         }
 
-        $userId = $user->id;
+        $userId    = $user->id;
         $responses = [];
 
         foreach ($request->file('documents') as $file) {
             $fileName = $file->getClientOriginalName();
-            $url = 'http://20.218.155.138/datasheet/werthenback';
-
+            $url      = 'http://20.218.155.138/datasheet/werthenback';
 
             $username = 'api_user';
             $password = 'g*f>G31B=9D7';
 
             $client = new Client([
-                'timeout' => 600,
+                'timeout'         => 600,
                 'connect_timeout' => 60,
-                'read_timeout' => 600,  // Add explicit read timeout
-                'http_errors' => false, // Handle errors manually
+                'read_timeout'    => 600,   // Add explicit read timeout
+                'http_errors'     => false, // Handle errors manually
             ]);
 
             try {
                 // Make the POST request with Basic Auth and multipart/form-data
                 $response = $client->post($url, [
-                    'auth' => [$username, $password],
+                    'auth'      => [$username, $password],
                     'multipart' => [
                         [
                             'name'     => 'username',
@@ -80,7 +76,7 @@ class WerthenbachController extends Controller
                         [
                             'name'     => 'document',
                             'contents' => fopen($file->getPathname(), 'r'),
-                            'filename' => $fileName
+                            'filename' => $fileName,
                         ],
                     ],
                 ]);
@@ -92,17 +88,36 @@ class WerthenbachController extends Controller
 
                     Werthenbach::create([
                         'file_name' => $fileName,
-                        'data' => base64_encode(json_encode($responseData)),
-                        'user_id' => $userId,
+                        'data'      => base64_encode(json_encode($responseData)),
+                        'user_id'   => $userId,
+                        'status'    => 'success',
                     ]);
 
-                    $responses[] =  $responseData;
+                    $responses[] = $responseData;
                 } else {
-                    return response()->json(['message' => 'Failed to upload file', 'error' => 'Unexpected status code'], $response->getStatusCode());
+                    $errorMessage = 'Unexpected status code: ' . $response->getStatusCode();
+                    Werthenbach::create([
+                        'file_name'     => $fileName,
+                        'data'          => base64_encode(json_encode([])),
+                        'user_id'       => $userId,
+                        'status'        => 'error',
+                        'error_message' => $errorMessage,
+                    ]);
+                    return response()->json(['message' => 'Failed to upload file', 'error' => $errorMessage], $response->getStatusCode());
                 }
             } catch (RequestException $e) {
                 // Handle the error response
                 $errorResponse = $e->hasResponse() ? $e->getResponse()->getBody()->getContents() : $e->getMessage();
+
+                // Save error record
+                Werthenbach::create([
+                    'file_name'     => $fileName,
+                    'data'          => base64_encode(json_encode([])),
+                    'user_id'       => $userId,
+                    'status'        => 'error',
+                    'error_message' => $errorResponse,
+                ]);
+
                 return response()->json(['message' => 'Failed to upload file', 'error' => $errorResponse], $e->getCode() ?: 400);
             }
         }
@@ -113,7 +128,7 @@ class WerthenbachController extends Controller
     {
         // Ensure the user is authenticated
         $user = Auth::user();
-        if (!$user) {
+        if (! $user) {
             return response()->json(['error' => 'Unauthenticated.'], 401);
         }
 
@@ -125,13 +140,13 @@ class WerthenbachController extends Controller
         if ($userAdminRecords->isNotEmpty()) {
             // Add User Admin IDs
             $userAdminIds = $userAdminRecords->pluck('user_id')->toArray();
-            $userIds = array_merge($userIds, $userAdminIds);
+            $userIds      = array_merge($userIds, $userAdminIds);
 
             // Add Organizational User IDs under User Admins
             $orgUserRecords = OrganizationalUser::whereIn('user_id', $userAdminIds)->get();
             if ($orgUserRecords->isNotEmpty()) {
                 $orgUserIds = $orgUserRecords->pluck('organizational_id')->toArray();
-                $userIds = array_merge($userIds, $orgUserIds);
+                $userIds    = array_merge($userIds, $orgUserIds);
             }
         }
 
@@ -147,13 +162,12 @@ class WerthenbachController extends Controller
                 ->get();
             if ($orgUserRecords->isNotEmpty()) {
                 $orgUserIds = $orgUserRecords->pluck('organizational_id')->toArray();
-                $userIds = array_merge($userIds, $orgUserIds);
+                $userIds    = array_merge($userIds, $orgUserIds);
             }
         }
 
         // Ensure unique user IDs to avoid duplication
         $userIds = array_unique($userIds);
-
 
         // Fetch all processed data for the determined user IDs
         $processedData = Werthenbach::whereIn('user_id', $userIds)
@@ -168,7 +182,7 @@ class WerthenbachController extends Controller
         // Return the processed data as a JSON response
         return response()->json([
             'message' => 'Data fetched successfully',
-            'data' => $processedData,
+            'data'    => $processedData,
         ]);
     }
 
@@ -192,14 +206,13 @@ class WerthenbachController extends Controller
             $orgUserRecords = OrganizationalUser::whereIn('user_id', $userAdminIds)->get();
             if ($orgUserRecords->isNotEmpty()) {
                 $orgUserIds = $orgUserRecords->pluck('organizational_id')->toArray();
-                $userIds = array_merge($userIds, $orgUserIds);
+                $userIds    = array_merge($userIds, $orgUserIds);
             }
         }
 
         $userIds = array_filter(array_unique($userIds));
         $userIds = array_map('intval', $userIds); // Convert all values to integers
-        // dd($userIds);
-
+                                                  // dd($userIds);
 
         // Fetch user details (id and name) for filters
         $userData = User::whereIn('id', $userIds)->select('id', 'name')->get();
@@ -219,12 +232,12 @@ class WerthenbachController extends Controller
         // Return both processed data and user data for frontend
         return response()->json([
             'message' => 'Data fetched successfully',
-            'data' => $processedData,  // Processed data
-            'users' => $userData,      // User data for filters
+            'data'    => $processedData, // Processed data
+            'users'   => $userData,      // User data for filters
         ]);
     }
 
-      public function getAllProcessedDataByOrganization($userId)
+    public function getAllProcessedDataByOrganization($userId)
     {
 
         $userId = $userId;
@@ -242,13 +255,13 @@ class WerthenbachController extends Controller
                 ->get();
             if ($orgUserRecords->isNotEmpty()) {
                 $orgUserIds = $orgUserRecords->pluck('organizational_id')->toArray();
-                $userIds = array_merge($userIds, $orgUserIds);
+                $userIds    = array_merge($userIds, $orgUserIds);
             }
         }
 
         $userIds = array_filter(array_unique($userIds));
         $userIds = array_map('intval', $userIds); // Convert all values to integers
-        // dd($userIds);
+                                                  // dd($userIds);
         $userData = User::whereIn('id', $userIds)->select('id', 'name')->get();
 
         $processedData = Werthenbach::whereIn('user_id', $userIds)
@@ -265,8 +278,8 @@ class WerthenbachController extends Controller
         // Return both processed data and user data for frontend
         return response()->json([
             'message' => 'Data fetched successfully',
-            'data' => $processedData,  // Processed data
-            'users' => $userData,      // User data for filters
+            'data'    => $processedData, // Processed data
+            'users'   => $userData,      // User data for filters
         ]);
     }
     public function getAllProcessedDataByUser($userId)
@@ -288,7 +301,7 @@ class WerthenbachController extends Controller
                 ->get();
             if ($orgUserRecords->isNotEmpty()) {
                 $orgUserIds = $orgUserRecords->pluck('organizational_id')->toArray();
-                $userIds = array_merge($userIds, $orgUserIds);
+                $userIds    = array_merge($userIds, $orgUserIds);
             }
         }
         // Ensure unique user IDs to avoid duplication
@@ -310,8 +323,8 @@ class WerthenbachController extends Controller
         // Return both processed data and user data for frontend
         return response()->json([
             'message' => 'Data fetched successfully',
-            'data' => $processedData,  // Processed data
-            'users' => $userData,      // User data for filters
+            'data'    => $processedData, // Processed data
+            'users'   => $userData,      // User data for filters
         ]);
     }
 }

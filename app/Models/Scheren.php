@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class Scheren extends Model
 {
     use HasFactory;
-    protected $fillable = ['file_name', 'data', 'user_id'];
+    protected $fillable = ['file_name', 'data', 'user_id', 'status', 'error_message'];
 
     public function Scheren()
     {

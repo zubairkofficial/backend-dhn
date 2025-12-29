@@ -1,12 +1,11 @@
 <?php
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
 class Werthenbach extends Model
 {
-    protected $fillable = ['file_name', 'data', 'user_id'];
+    protected $fillable = ['file_name', 'data', 'user_id', 'status', 'error_message'];
 
     public function werthenbach()
     {
@@ -17,5 +16,5 @@ class Werthenbach extends Model
     {
         return $this->belongsTo(User::class, 'user_id');
     }
-    
+
 }

@@ -62,6 +62,8 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::get('/search-all-users', [AuthController::class, 'searchAllUsers']);
     Route::get('dashboardInfo', [AdminController::class, 'dashboardInfo']);
     Route::post('/reset-user-password/{id}', [AuthController::class, 'resetUserPassword']);
+    Route::post('/toggle-user-history/{userId}', [AdminController::class, 'toggleUserHistory']);
+    Route::get('/user-history-status/{userId}', [AdminController::class, 'getUserHistoryStatus']);
     // Route::get('/customer-requests', [CustomerRequestController::class, 'getRequests']);
     // Route::post('/customer-requests/{id}/approve', [CustomerRequestController::class, 'approveRequest']);
     // Route::post('/customer-requests/{id}/decline', [CustomerRequestController::class, 'declineRequest']);
@@ -118,6 +120,10 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     });
     Route::post('/send-demo-processed-file', [DemoDataProcessController::class, 'sendProcessedFile']);
     Route::get('/get-user-demo-processed-data', [DemoDataProcessController::class, 'getUserProcessedData']);
+    Route::get('/get-user-clone-processed-data', [CloneDataProcessController::class, 'getUserProcessedData']);
+    Route::get('/get-all-clone-processed-data-customer/{userId}', [CloneDataProcessController::class, 'getAllProcessedDataByCustomer']);
+    Route::get('/get-all-clone-processed-data-organization/{userId}', [CloneDataProcessController::class, 'getAllProcessedDataByOrganization']);
+    Route::get('/get-all-clone-processed-data-user/{userId}', [CloneDataProcessController::class, 'getAllProcessedDataByUser']);
     Route::post('/data-process', [DataProcessController::class, 'fetchDataProcess']);
     Route::post('/send-processed-file', [DataProcessController::class, 'sendProcessedFile']);
     Route::get('/get-user-processed-data', [DataProcessController::class, 'getUserProcessedData']);

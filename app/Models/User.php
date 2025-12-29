@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -26,6 +25,7 @@ class User extends Authenticatable
         'is_user_organizational',
         'is_user_customer',
         'user_register_type',
+        'history_enabled',
     ];
 
     protected $with = ['organization'];
@@ -46,8 +46,8 @@ class User extends Authenticatable
      */
     protected $casts = [
         'email_verified_at' => 'datetime',
-        'password' => 'hashed',
-        'services' => 'array',
+        'password'          => 'hashed',
+        'services'          => 'array',
     ];
 
     public function organization()
@@ -122,7 +122,6 @@ class User extends Authenticatable
     {
         return $this->hasMany(OrganizationalUser::class, 'customer_id')->with('organizational');
     }
-
 
     public function customerUserWithNullOrganization()
     {
