@@ -20,18 +20,21 @@ abstract class Controller
     public function countToolDocument($organizationId)
     {
         $normalUsers = OrganizationalUser::where('user_id', $organizationId)->pluck('organizational_id')->toArray();
+        
+        // Include the organizational user's own ID in the array to count their usage as well
+        $allUserIds = array_merge($normalUsers, [$organizationId]);
 
-        $dataProcessCount = DataProcess::whereIn('user_id', $normalUsers)->count();
-        $documentsCount = Document::whereIn('user_id', $normalUsers)->count();
-        $contractSolutionCount = ContractSolutions::whereIn('user_id', $normalUsers)->count();
+        $dataProcessCount = DataProcess::whereIn('user_id', $allUserIds)->count();
+        $documentsCount = Document::whereIn('user_id', $allUserIds)->count();
+        $contractSolutionCount = ContractSolutions::whereIn('user_id', $allUserIds)->count();
 
-        $freeDataProcessCount = FreeDataProcess::whereIn('user_id', $normalUsers)->count();
-        $cloneDataProcessCount = CloneDataProcess::whereIn('user_id', $normalUsers)->count();
-        $werthenbachCount = Werthenbach::whereIn('user_id', $normalUsers)->count();
-        $scherenCount = Scheren::whereIn('user_id', $normalUsers)->count();
-        $sennheiserCount = Sennheiser::whereIn('user_id', $normalUsers)->count();
-        $verbundCount = Verbund::whereIn('user_id', $normalUsers)->count();
-        $demoDataProcessCount = DemoDataProcess::whereIn('user_id', $normalUsers)->count();
+        $freeDataProcessCount = FreeDataProcess::whereIn('user_id', $allUserIds)->count();
+        $cloneDataProcessCount = CloneDataProcess::whereIn('user_id', $allUserIds)->count();
+        $werthenbachCount = Werthenbach::whereIn('user_id', $allUserIds)->count();
+        $scherenCount = Scheren::whereIn('user_id', $allUserIds)->count();
+        $sennheiserCount = Sennheiser::whereIn('user_id', $allUserIds)->count();
+        $verbundCount = Verbund::whereIn('user_id', $allUserIds)->count();
+        $demoDataProcessCount = DemoDataProcess::whereIn('user_id', $allUserIds)->count();
         $allCount = $dataProcessCount + $documentsCount + $contractSolutionCount + $freeDataProcessCount + $cloneDataProcessCount + $werthenbachCount + $scherenCount + $sennheiserCount + $verbundCount + $demoDataProcessCount;
 
         return [
