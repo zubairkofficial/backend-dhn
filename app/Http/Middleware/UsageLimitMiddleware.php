@@ -117,53 +117,56 @@ class UsageLimitMiddleware
 
         $organizationalUserIds = OrganizationalUser::where('user_id', $organizationalUserId->user_id)
             ->whereNotNull('organizational_id')
-            ->pluck('organizational_id'); // Return a collection of organizational_ids
+            ->pluck('organizational_id')->toArray(); // Return an array of organizational_ids
+
+        // Include the organizational user's own ID to count their usage as well
+        $allUserIds = array_merge($organizationalUserIds, [$organizationalUserId->user_id]);
 
         // If there are no valid organizational IDs, return an error message
-        if ($organizationalUserIds->isEmpty()) {
+        if (empty($allUserIds)) {
             return response()->json(['status' => 'error', 'message' => 'No valid organizational data found'], 400);
         }
 
         // Dynamically check usage for the specified model
         switch ($model) {
             case 'Document':
-                $usageCount = Document::whereIn('user_id', $organizationalUserIds)->count();
+                $usageCount = Document::whereIn('user_id', $allUserIds)->count();
                 break;
 
             case 'ContractSolutions':
-                $usageCount = ContractSolutions::whereIn('user_id', $organizationalUserIds)->count();
+                $usageCount = ContractSolutions::whereIn('user_id', $allUserIds)->count();
                 break;
 
             case 'DataProcess':
-                $usageCount = DataProcess::whereIn('user_id', $organizationalUserIds)->count();
+                $usageCount = DataProcess::whereIn('user_id', $allUserIds)->count();
                 break;
 
             case 'FreeDataProcess':
-                $usageCount = FreeDataProcess::whereIn('user_id', $organizationalUserIds)->count();
+                $usageCount = FreeDataProcess::whereIn('user_id', $allUserIds)->count();
                 break;
 
             case 'CloneDataProcess':
-                $usageCount = CloneDataProcess::whereIn('user_id', $organizationalUserIds)->count();
+                $usageCount = CloneDataProcess::whereIn('user_id', $allUserIds)->count();
                 break;
 
             case 'Werthenbach':
-                $usageCount = Werthenbach::whereIn('user_id', $organizationalUserIds)->count();
+                $usageCount = Werthenbach::whereIn('user_id', $allUserIds)->count();
                 break;
 
             case 'Scheren':
-                $usageCount = Scheren::whereIn('user_id', $organizationalUserIds)->count();
+                $usageCount = Scheren::whereIn('user_id', $allUserIds)->count();
                 break;
 
             case 'Sennheiser':
-                $usageCount = Sennheiser::whereIn('user_id', $organizationalUserIds)->count();
+                $usageCount = Sennheiser::whereIn('user_id', $allUserIds)->count();
                 break;
 
             case 'Verbund':
-                $usageCount = Verbund::whereIn('user_id', $organizationalUserIds)->count();
+                $usageCount = Verbund::whereIn('user_id', $allUserIds)->count();
                 break;
 
             case 'DemoDataProcess':
-                $usageCount = DemoDataProcess::whereIn('user_id', $organizationalUserIds)->count();
+                $usageCount = DemoDataProcess::whereIn('user_id', $allUserIds)->count();
                 break;
 
             default:
