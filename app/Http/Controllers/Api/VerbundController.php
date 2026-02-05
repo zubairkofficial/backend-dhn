@@ -47,7 +47,7 @@ class VerbundController extends Controller
             $client = new Client([
                 'timeout' => 600,
                 'connect_timeout' => 60,
-                'read_timeout' => 600,  // Add explicit read timeout
+                'read_timeout' => 600,  // 10 min for SDB2Excel Verbund (can take ~2 min, 5 min safe)
                 'http_errors' => false, // Handle errors manually
             ]);
 
