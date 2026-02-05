@@ -8,6 +8,7 @@ use App\Models\DemoDataProcess;
 use App\Models\Document;
 use App\Models\FreeDataProcess;
 use App\Models\OrganizationalUser;
+use App\Models\User;
 use App\Models\Scheren;
 use App\Models\Sennheiser;
 use App\Models\Verbund;
@@ -42,8 +43,8 @@ class UsageLimitMiddleware
             return $next($request); // Skip the counter checks and allow the request to continue
         }
 
-                                                       // Get the user's counter limit (ensure it's a valid number)
-        $userCounterLimit = $user->counter_limit ?? 0; // default to 0 if null
+        // Will be set per branch: "out" uses own limit, "in" uses customer's limit
+        $userCounterLimit = $user->counter_limit ?? 0;
 
         // Handle "out" user type - count directly from user_id
         if ($user->user_register_type == "out") {
@@ -114,6 +115,10 @@ class UsageLimitMiddleware
         if (! $organizationalUserId) {
             return response()->json(['status' => 'error', 'message' => 'No valid organizational data found'], 400);
         }
+
+        // Use the customer's counter_limit so admin limit changes apply immediately
+        $customer = User::find($organizationalUserId->customer_id);
+        $userCounterLimit = $customer ? ($customer->counter_limit ?? 0) : ($user->counter_limit ?? 0);
 
         $organizationalUserIds = OrganizationalUser::where('user_id', $organizationalUserId->user_id)
             ->whereNotNull('organizational_id')

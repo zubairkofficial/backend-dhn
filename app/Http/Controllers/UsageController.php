@@ -105,9 +105,6 @@ class UsageController extends Controller
                 'available_count' => $availableCount, // Return available count
             ], 200);
         } else {
-            // Get the user's counter limit (ensure it's a valid number)
-            $userCounterLimit = $user->counter_limit ?? 0; // default to 0 if null
-
             // Get the organizational IDs associated with the authenticated user
             $organizationalUserId = OrganizationalUser::where('user_id', Auth::user()->id)
                 ->first();
@@ -119,6 +116,10 @@ class UsageController extends Controller
             if ($organizationalUserId === null) {
                 return response()->json(['status' => 'error', 'message' => 'Organizational user data is missing'], 400);
             }
+
+            // Use the customer's counter_limit (contract limit), not the logged-in user's, so admin limit changes apply immediately
+            $customer = User::find($organizationalUserId->customer_id);
+            $userCounterLimit = $customer ? ($customer->counter_limit ?? 0) : ($user->counter_limit ?? 0);
 
             $organizationalUserIds = OrganizationalUser::where('user_id', $organizationalUserId->user_id)
                 ->whereNotNull('organizational_id')
