@@ -37,9 +37,30 @@ class UsageController extends Controller
         if ($user->expiration_date && $user->expiration_date < now()) {
             return response()->json(['status' => 'error', 'message' => 'Contract expired, usage limit is no longer available'], 403);
         }
-        // If the user is a customer (is_user_customer is 1), allow access without checking counter
+        // If the user is a customer (is_user_customer is 1), allow access and return their usage/limit for display
         if ($user->is_user_customer == 1) {
-            return response()->json(['status' => 'success', 'message' => 'Applicable'], 200);
+            $userCounterLimit = $user->counter_limit ?? 0;
+            $usageCount = 0;
+            switch ($model) {
+                case 'Document': $usageCount = Document::where('user_id', $user->id)->count(); break;
+                case 'ContractSolutions': $usageCount = ContractSolutions::where('user_id', $user->id)->count(); break;
+                case 'DataProcess': $usageCount = DataProcess::where('user_id', $user->id)->count(); break;
+                case 'FreeDataProcess': $usageCount = FreeDataProcess::where('user_id', $user->id)->count(); break;
+                case 'CloneDataProcess': $usageCount = CloneDataProcess::where('user_id', $user->id)->count(); break;
+                case 'Werthenbach': $usageCount = Werthenbach::where('user_id', $user->id)->count(); break;
+                case 'Scheren': $usageCount = Scheren::where('user_id', $user->id)->count(); break;
+                case 'Sennheiser': $usageCount = Sennheiser::where('user_id', $user->id)->count(); break;
+                case 'Verbund': $usageCount = Verbund::where('user_id', $user->id)->count(); break;
+                case 'DemoDataProcess': $usageCount = DemoDataProcess::where('user_id', $user->id)->count(); break;
+                default: $usageCount = 0;
+            }
+            $availableCount = max(0, $userCounterLimit - $usageCount);
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Applicable',
+                'userCounterLimit' => $userCounterLimit,
+                'available_count' => $availableCount,
+            ], 200);
         }
 
         // yaha sy shru kro
@@ -117,9 +138,12 @@ class UsageController extends Controller
                 return response()->json(['status' => 'error', 'message' => 'Organizational user data is missing'], 400);
             }
 
-            // Use the customer's counter_limit (contract limit), not the logged-in user's, so admin limit changes apply immediately
+            // Use the customer's counter_limit (contract limit); fallback to main org user or current user if customer limit is 0/null
             $customer = User::find($organizationalUserId->customer_id);
-            $userCounterLimit = $customer ? ($customer->counter_limit ?? 0) : ($user->counter_limit ?? 0);
+            $customerLimit = $customer ? ($customer->counter_limit ?? 0) : 0;
+            $mainOrgUser = User::find($organizationalUserId->user_id);
+            $mainOrgLimit = $mainOrgUser ? ($mainOrgUser->counter_limit ?? 0) : 0;
+            $userCounterLimit = $customerLimit > 0 ? $customerLimit : ($mainOrgLimit > 0 ? $mainOrgLimit : ($user->counter_limit ?? 0));
 
             $organizationalUserIds = OrganizationalUser::where('user_id', $organizationalUserId->user_id)
                 ->whereNotNull('organizational_id')

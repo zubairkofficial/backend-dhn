@@ -116,9 +116,12 @@ class UsageLimitMiddleware
             return response()->json(['status' => 'error', 'message' => 'No valid organizational data found'], 400);
         }
 
-        // Use the customer's counter_limit so admin limit changes apply immediately
+        // Use the customer's counter_limit; fallback to main org user or current user if customer limit is 0/null
         $customer = User::find($organizationalUserId->customer_id);
-        $userCounterLimit = $customer ? ($customer->counter_limit ?? 0) : ($user->counter_limit ?? 0);
+        $customerLimit = $customer ? ($customer->counter_limit ?? 0) : 0;
+        $mainOrgUser = User::find($organizationalUserId->user_id);
+        $mainOrgLimit = $mainOrgUser ? ($mainOrgUser->counter_limit ?? 0) : 0;
+        $userCounterLimit = $customerLimit > 0 ? $customerLimit : ($mainOrgLimit > 0 ? $mainOrgLimit : ($user->counter_limit ?? 0));
 
         $organizationalUserIds = OrganizationalUser::where('user_id', $organizationalUserId->user_id)
             ->whereNotNull('organizational_id')
