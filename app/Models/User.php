@@ -26,6 +26,7 @@ class User extends Authenticatable
         'is_user_customer',
         'user_register_type',
         'history_enabled',
+        'usage_notified_at',
     ];
 
     protected $with = ['organization'];
@@ -48,6 +49,7 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
         'password'          => 'hashed',
         'services'          => 'array',
+        'usage_notified_at' => 'datetime',
     ];
 
     public function organization()

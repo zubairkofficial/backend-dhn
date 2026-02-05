@@ -35,10 +35,8 @@ class DataProcessController extends Controller
         $details['usageCount']       = $usage['usageCount'];
         $details['serviceName']      = $usage['serviceName'];
         $user                        = Auth::user();
-        if ($status) {
-            $sendNofication = new SendNotifyMail();
-            $sendNofication->sendMail($user->email, $details);
-        }
+        $sendNofication = new SendNotifyMail();
+        $sendNofication->sendMailIfFirstTimeAt90($user, $details, $status);
 
         $userId    = $request->input('user_id');
         $responses = [];

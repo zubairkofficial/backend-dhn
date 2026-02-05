@@ -35,10 +35,8 @@ class FileController extends Controller
         $details['usageCount'] =$usage['usageCount'];
         $details['serviceName'] = $usage['serviceName'];
         $user = Auth::user();
-        if ($status) {
-            $sendNofication = new SendNotifyMail();
-            $sendNofication->sendMail($user->email ,$details);
-        }
+        $sendNofication = new SendNotifyMail();
+        $sendNofication->sendMailIfFirstTimeAt90($user, $details, $status);
         // API URL
         $url = 'http://20.218.155.138/sthamer/datasheet_process';
 

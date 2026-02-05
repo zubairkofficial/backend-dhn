@@ -32,10 +32,8 @@ class WerthenbachController extends Controller
         $details['usageCount']       = $usage['usageCount'];
         $details['serviceName']      = $usage['serviceName'];
         $user                        = Auth::user();
-        if ($status) {
-            $sendNofication = new SendNotifyMail();
-            $sendNofication->sendMail($user->email, $details);
-        }
+        $sendNofication = new SendNotifyMail();
+        $sendNofication->sendMailIfFirstTimeAt90($user, $details, $status);
 
         $user = Auth::user();
 
