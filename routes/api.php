@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\SennheiserController;
 use App\Http\Controllers\Api\ServiceController;
 use App\Http\Controllers\Api\SettingController;
 use App\Http\Controllers\Api\TranslationController;
+use App\Http\Controllers\Api\SurfachemController;
 use App\Http\Controllers\Api\VerbundController;
 use App\Http\Controllers\Api\VoiceController;
 use App\Http\Controllers\Api\WerthenbachController;
@@ -199,6 +200,13 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::get('/get-all-sennheiser-data-customer/{userId}', [SennheiserController::class, 'getAllSennheiserDataByCustomer']);
     Route::get('/get-all-sennheiser-data-organization/{userId}', [SennheiserController::class, 'getAllSennheiserDataByOrganization']);
     Route::get('/get-all-sennheiser-data-user/{userId}', [SennheiserController::class, 'getAllSennheiserDataByUser']);
+
+    // Surfachem (SDB2Excel Surfachem)
+    Route::post('/surfachem-data-process', [SurfachemController::class, 'fetchSurfachem']);
+    Route::get('/get-user-surfachem-data', [SurfachemController::class, 'getUserSurfachemData']);
+    Route::get('/get-all-surfachem-data-customer/{userId}', [SurfachemController::class, 'getAllSurfachemDataByCustomer']);
+    Route::get('/get-all-surfachem-data-organization/{userId}', [SurfachemController::class, 'getAllSurfachemDataByOrganization']);
+    Route::get('/get-all-surfachem-data-user/{userId}', [SurfachemController::class, 'getAllSurfachemDataByUser']);
 
     // Verbund
     Route::post('/verbund-data-process', [VerbundController::class, 'fetchVerbund']);

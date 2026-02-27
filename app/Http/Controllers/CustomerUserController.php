@@ -322,6 +322,7 @@ class CustomerUserController extends Controller
                 'total_scheren_count' => $userCountData['total_scheren_count'] ?? 0,
                 'total_sennheiser_count' => $userCountData['total_sennheiser_count'] ?? 0,
                 'total_verbund_count' => $userCountData['total_verbund_count'] ?? 0,
+                'total_surfachem_count' => $userCountData['total_surfachem_count'] ?? 0,
             ];
         });
 
@@ -350,7 +351,7 @@ class CustomerUserController extends Controller
 
         // Preload necessary relationships for efficiency
         $users = User::whereIn('id', $uniqueIds)
-            ->with(['documents', 'contractSolutions', 'dataprocesses', 'freedataprocesses', 'clonedataprocesses', 'werthenbachs', 'scherens', 'sennheisers', 'verbunds', 'demodataprocesses'])
+            ->with(['documents', 'contractSolutions', 'dataprocesses', 'freedataprocesses', 'clonedataprocesses', 'werthenbachs', 'scherens', 'sennheisers', 'verbunds', 'surfachem', 'demodataprocesses'])
             ->get();
 
         // Initialize counters
@@ -364,6 +365,7 @@ class CustomerUserController extends Controller
         $totalSennheiserCount = 0;
         $totalVerbundCount = 0;
         $totalDemoDataProcessCount = 0;
+        $totalSurfachemCount = 0;
         // Process each user
         foreach ($users as $user) {
             $userServices = $user->services ?? [];
@@ -395,6 +397,9 @@ class CustomerUserController extends Controller
             if (in_array('11', $userServices)) {
                 $totalVerbundCount += $user->verbunds->count();
             }
+            if (in_array('13', $userServices)) {
+                $totalSurfachemCount += $user->surfachem->count();
+            }
             if (in_array('12', $userServices)) {
                 $totalDemoDataProcessCount += $user->demodataprocesses->count();
             }
@@ -410,6 +415,7 @@ class CustomerUserController extends Controller
             'total_scheren_count' => $totalScherenCount,
             'total_sennheiser_count' => $totalSennheiserCount,
             'total_verbund_count' => $totalVerbundCount,
+            'total_surfachem_count' => $totalSurfachemCount,
             'total_demo_data_process_count' => $totalDemoDataProcessCount,
         ]);
     }

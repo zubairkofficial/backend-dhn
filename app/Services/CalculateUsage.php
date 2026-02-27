@@ -10,6 +10,7 @@ use App\Models\FreeDataProcess;
 use App\Models\Scheren;
 use App\Models\Sennheiser;
 use App\Models\Service;
+use App\Models\Surfachem;
 use App\Models\Verbund;
 use App\Models\Werthenbach;
 use Illuminate\Support\Facades\Auth;
@@ -32,6 +33,7 @@ class CalculateUsage
             'Scheren'                      => Scheren::class,
             'Sennheiser'                   => Sennheiser::class,
             'Verbund'                      => Verbund::class,
+            'surfachem'                    => Surfachem::class,
         ];
 
         // Find the service link dynamically based on the model

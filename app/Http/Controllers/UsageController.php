@@ -13,6 +13,7 @@ use App\Models\Werthenbach;
 use App\Models\OrganizationalUser;
 use App\Models\Scheren;
 use App\Models\Sennheiser;
+use App\Models\Surfachem;
 use App\Models\Verbund;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -51,6 +52,7 @@ class UsageController extends Controller
                 case 'Scheren': $usageCount = Scheren::where('user_id', $user->id)->count(); break;
                 case 'Sennheiser': $usageCount = Sennheiser::where('user_id', $user->id)->count(); break;
                 case 'Verbund': $usageCount = Verbund::where('user_id', $user->id)->count(); break;
+                case 'Surfachem': $usageCount = Surfachem::where('user_id', $user->id)->count(); break;
                 case 'DemoDataProcess': $usageCount = DemoDataProcess::where('user_id', $user->id)->count(); break;
                 default: $usageCount = 0;
             }
@@ -97,6 +99,9 @@ class UsageController extends Controller
                     break;
                 case 'Verbund':
                     $usageCount = Verbund::where('user_id', $user->id)->count();
+                    break;
+                case 'Surfachem':
+                    $usageCount = Surfachem::where('user_id', $user->id)->count();
                     break;
                 case 'DemoDataProcess':
                     $usageCount = DemoDataProcess::where('user_id', $user->id)->count();
@@ -195,6 +200,10 @@ class UsageController extends Controller
                     $usageCount = Verbund::whereIn('user_id', $allUserIds)->count();
                     break;
 
+                case 'Surfachem':
+                    $usageCount = Surfachem::whereIn('user_id', $allUserIds)->count();
+                    break;
+
                 case 'DemoDataProcess':
                     $usageCount = DemoDataProcess::whereIn('user_id', $allUserIds)->count();
                     break;
@@ -245,6 +254,7 @@ class UsageController extends Controller
             'Scheren' => Scheren::class,
             'Sennheiser' => Sennheiser::class,
             'Verbund' => Verbund::class,
+            'Surfachem' => Surfachem::class,
             'DemoDataProcess' => DemoDataProcess::class,
         ];
 
@@ -340,6 +350,12 @@ class UsageController extends Controller
             // Count the data processes associated with the user
             $verbundCount = $user->verbunds()->count();
             $responseData['verbund_count'] = $verbundCount;
+        }
+
+        if (in_array('13', $userServices)) {
+            // Count the Surfachem data associated with the user
+            $surfachemCount = $user->surfachem()->count();
+            $responseData['surfachem_count'] = $surfachemCount;
         }
 
         if (in_array('12', $userServices)) {

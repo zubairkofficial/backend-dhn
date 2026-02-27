@@ -12,6 +12,7 @@ use App\Models\DemoDataProcess;
 use App\Models\Werthenbach;
 use App\Models\Scheren;
 use App\Models\Sennheiser;
+use App\Models\Surfachem;
 use App\Models\Verbund;
 use App\Models\OrganizationalUser;
 use Illuminate\Http\Request;
@@ -53,6 +54,7 @@ class ServiceController extends Controller
                 'scheren' => Scheren::class,
                 'sennheiser' => Sennheiser::class,
                 'verbund' => Verbund::class,
+                'surfachem' => Surfachem::class,
             ];
             $updatedServices = Service::where('status', 1)->get()->map(function ($service) use ($services, $user) {
                 // Get the model class associated with the current service
@@ -113,6 +115,7 @@ class ServiceController extends Controller
                 'scheren' => Scheren::class,
                 'sennheiser' => Sennheiser::class,
                 'verbund' => Verbund::class,
+                'surfachem' => Surfachem::class,
             ];
 
             // Loop through each service and check the count of the related models

@@ -116,6 +116,11 @@ class User extends Authenticatable
         return $this->hasMany(Verbund::class, 'user_id');
     }
 
+    public function surfachem()
+    {
+        return $this->hasMany(Surfachem::class, 'user_id');
+    }
+
     public function demodataprocesses()
     {
         return $this->hasMany(DemoDataProcess::class, 'user_id');

@@ -738,6 +738,7 @@ class AuthController extends Controller
                 'scherenCount'           => $documents['scherenCount'],
                 'sennheiserCount'        => $documents['sennheiserCount'],
                 'verbundCount'           => $documents['verbundCount'],
+                'surfachemCount'         => $documents['surfachemCount'],
                 'demoDataProcessCount'   => $documents['demoDataProcessCount'],
                 'allCount'               => $documents['allCount'],
                 'organization_name'      => $organizationNames->get($user->org_id),
