@@ -276,8 +276,16 @@ class CustomerUserController extends Controller
 
     public function getAllCustomerUsers()
     {
-        // Fetch all users where is_user_customer is 1
-        $customerUsers = User::where('is_user_customer', 1)->get();
+        $perPage = (int) request()->query('per_page', 50);
+        $perPage = max(1, min($perPage, 200));
+
+        // Fetch customer users (avoid globally eager-loaded relationships)
+        $customerUsers = User::query()
+            ->without(['organization'])
+            ->where('is_user_customer', 1)
+            ->select(['id', 'name', 'email', 'services', 'org_id', 'is_user_organizational'])
+            ->orderByDesc('id')
+            ->paginate($perPage);
 
         // If no users are found, return a message
         if ($customerUsers->isEmpty()) {
@@ -287,24 +295,30 @@ class CustomerUserController extends Controller
         }
 
         // Fetch service IDs for each user
-        $serviceIds = $customerUsers->pluck('services')->flatten();
+        $customerUsersCollection = collect($customerUsers->items());
+
+        $serviceIds = $customerUsersCollection
+            ->pluck('services')
+            ->flatten()
+            ->filter()
+            ->unique()
+            ->values();
 
         // Fetch service names based on service IDs
         $serviceNames = Service::whereIn('id', $serviceIds)->pluck('name', 'id');
 
         // Fetch organization names based on org_id
-        $orgIds = $customerUsers->pluck('org_id');
+        $orgIds = $customerUsersCollection->pluck('org_id')->filter()->unique()->values();
         $organizationNames = Organization::whereIn('id', $orgIds)->pluck('name', 'id');
 
         // Map users and include services, organization names, and user count data
-        $usersWithServiceAndOrgNames = $customerUsers->map(function ($user) use ($serviceNames, $organizationNames) {
+        $usersWithServiceAndOrgNames = $customerUsersCollection->map(function ($user) use ($serviceNames, $organizationNames) {
             // Get the service names for the user
             $userServiceNames = collect($user->services)->map(function ($serviceId) use ($serviceNames) {
                 return $serviceNames->get($serviceId);
             });
 
-            // Call getUserCount to retrieve the user's specific data
-            $userCountData = $this->getUserCount($user->id)->getData(true);
+            $userCountData = $this->buildUserCountData((int) $user->id);
 
             // Return the user data with service names, organization name, and user count data
             return [
@@ -329,11 +343,17 @@ class CustomerUserController extends Controller
         // Return the list of customer users with service names, organization names, and user count data
         return response()->json([
             'customer_users' => $usersWithServiceAndOrgNames,
+            'pagination' => [
+                'current_page' => $customerUsers->currentPage(),
+                'per_page' => $customerUsers->perPage(),
+                'total' => $customerUsers->total(),
+                'last_page' => $customerUsers->lastPage(),
+            ],
         ], 200);
     }
 
 
-    private function getUserCount($id)
+    private function buildUserCountData(int $id): array
     {
         // Fetch initial user IDs excluding the logged-in user
         $ids = OrganizationalUser::where('customer_id', $id)
@@ -349,9 +369,24 @@ class CustomerUserController extends Controller
         // Merge all IDs, including the provided $id
         $uniqueIds = $ids->merge($additionalIds)->push((int)$id)->unique();
 
-        // Preload necessary relationships for efficiency
-        $users = User::whereIn('id', $uniqueIds)
-            ->with(['documents', 'contractSolutions', 'dataprocesses', 'freedataprocesses', 'clonedataprocesses', 'werthenbachs', 'scherens', 'sennheisers', 'verbunds', 'surfachem', 'demodataprocesses'])
+        // Use DB-side counts to avoid loading whole relations into memory
+        $users = User::query()
+            ->without(['organization'])
+            ->whereIn('id', $uniqueIds)
+            ->select(['id', 'services'])
+            ->withCount([
+                'documents',
+                'contractSolutions',
+                'dataprocesses',
+                'freedataprocesses',
+                'clonedataprocesses',
+                'werthenbachs',
+                'scherens',
+                'sennheisers',
+                'verbunds',
+                'surfachem',
+                'demodataprocesses',
+            ])
             ->get();
 
         // Initialize counters
@@ -371,41 +406,41 @@ class CustomerUserController extends Controller
             $userServices = $user->services ?? [];
 
             if (in_array('1', $userServices)) {
-                $totalDocumentCount += $user->documents->count();
+                $totalDocumentCount += (int) ($user->documents_count ?? 0);
             }
             if (in_array('3', $userServices)) {
-                $totalContractSolutionCount += $user->contractSolutions->count();
+                $totalContractSolutionCount += (int) ($user->contract_solutions_count ?? 0);
             }
             if (in_array('4', $userServices)) {
-                $totalDataProcessCount += $user->dataprocesses->count();
+                $totalDataProcessCount += (int) ($user->dataprocesses_count ?? 0);
             }
             if (in_array('5', $userServices)) {
-                $totalFreeDataProcessCount += $user->freedataprocesses->count();
+                $totalFreeDataProcessCount += (int) ($user->freedataprocesses_count ?? 0);
             }
             if (in_array('7', $userServices)) {
-                $totalCloneDataProcessCount += $user->clonedataprocesses->count();
+                $totalCloneDataProcessCount += (int) ($user->clonedataprocesses_count ?? 0);
             }
             if (in_array('8', $userServices)) {
-                $totalWerthenbachCount += $user->werthenbachs->count();
+                $totalWerthenbachCount += (int) ($user->werthenbachs_count ?? 0);
             }
             if (in_array('9', $userServices)) {
-                $totalScherenCount += $user->scherens->count();
+                $totalScherenCount += (int) ($user->scherens_count ?? 0);
             }
             if (in_array('10', $userServices)) {
-                $totalSennheiserCount += $user->sennheisers->count();
+                $totalSennheiserCount += (int) ($user->sennheisers_count ?? 0);
             }
             if (in_array('11', $userServices)) {
-                $totalVerbundCount += $user->verbunds->count();
+                $totalVerbundCount += (int) ($user->verbunds_count ?? 0);
             }
             if (in_array('13', $userServices)) {
-                $totalSurfachemCount += $user->surfachem->count();
+                $totalSurfachemCount += (int) ($user->surfachem_count ?? 0);
             }
             if (in_array('12', $userServices)) {
-                $totalDemoDataProcessCount += $user->demodataprocesses->count();
+                $totalDemoDataProcessCount += (int) ($user->demodataprocesses_count ?? 0);
             }
         }
 
-        return response()->json([
+        return [
             'total_document_count' => $totalDocumentCount,
             'total_contract_solution_count' => $totalContractSolutionCount,
             'total_data_process_count' => $totalDataProcessCount,
@@ -417,6 +452,6 @@ class CustomerUserController extends Controller
             'total_verbund_count' => $totalVerbundCount,
             'total_surfachem_count' => $totalSurfachemCount,
             'total_demo_data_process_count' => $totalDemoDataProcessCount,
-        ]);
+        ];
     }
 }
