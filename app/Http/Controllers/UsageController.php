@@ -20,10 +20,68 @@ use Illuminate\Support\Facades\Auth;
 
 class UsageController extends Controller
 {
+    private function resolveCounterScopeForUser(User $user): array
+    {
+        // Default: standalone user (no org scope)
+        $scopeUserIds = [$user->id];
+        $counterLimit = (int) ($user->counter_limit ?? 0);
+
+        // Find org linkage either as org user (user_id) or as regular user (organizational_id)
+        $link = OrganizationalUser::where('user_id', $user->id)->first();
+        if (! $link) {
+            $link = OrganizationalUser::where('organizational_id', $user->id)->first();
+        }
+
+        if (! $link) {
+            return ['user_ids' => $scopeUserIds, 'counter_limit' => $counterLimit];
+        }
+
+        $orgUserId = (int) ($link->user_id ?? $user->id);
+
+        $childIds = OrganizationalUser::where('user_id', $orgUserId)
+            ->whereNotNull('organizational_id')
+            ->pluck('organizational_id')
+            ->map(fn ($id) => (int) $id)
+            ->toArray();
+
+        $scopeUserIds = array_values(array_unique(array_merge($childIds, [$orgUserId])));
+
+        // Prefer the organizational user's limit as the shared group limit
+        $orgUser = User::find($orgUserId);
+        if ($orgUser && (int) ($orgUser->counter_limit ?? 0) > 0) {
+            $counterLimit = (int) $orgUser->counter_limit;
+        }
+
+        // If customer has an explicit contract limit, it should also cap the org group
+        $customer = isset($link->customer_id) ? User::find($link->customer_id) : null;
+        if ($customer && (int) ($customer->counter_limit ?? 0) > 0) {
+            $counterLimit = (int) $customer->counter_limit;
+        }
+
+        return ['user_ids' => $scopeUserIds, 'counter_limit' => $counterLimit];
+    }
+
+    private function countUsageForModel(string $model, array $userIds): int
+    {
+        return match ($model) {
+            'Document' => Document::whereIn('user_id', $userIds)->count(),
+            'ContractSolutions' => ContractSolutions::whereIn('user_id', $userIds)->count(),
+            'DataProcess' => DataProcess::whereIn('user_id', $userIds)->count(),
+            'FreeDataProcess' => FreeDataProcess::whereIn('user_id', $userIds)->count(),
+            'CloneDataProcess' => CloneDataProcess::whereIn('user_id', $userIds)->count(),
+            'Werthenbach' => Werthenbach::whereIn('user_id', $userIds)->count(),
+            'Scheren' => Scheren::whereIn('user_id', $userIds)->count(),
+            'Sennheiser' => Sennheiser::whereIn('user_id', $userIds)->count(),
+            'Verbund' => Verbund::whereIn('user_id', $userIds)->count(),
+            'Surfachem' => Surfachem::whereIn('user_id', $userIds)->count(),
+            'DemoDataProcess' => DemoDataProcess::whereIn('user_id', $userIds)->count(),
+            default => -1,
+        };
+    }
+
     /**
      * Get the document count and contract solution count for a specific user.
      *
-     * @param int $id
      * @return \Illuminate\Http\JsonResponse
      */
     public function getUsageCount(Request $request, $model)
@@ -38,24 +96,11 @@ class UsageController extends Controller
         if ($user->expiration_date && $user->expiration_date < now()) {
             return response()->json(['status' => 'error', 'message' => 'Contract expired, usage limit is no longer available'], 403);
         }
-        // If the user is a customer (is_user_customer is 1), allow access and return their usage/limit for display
+        // If the user is a customer (is_user_customer is 1), keep usage scoped to the customer user itself
         if ($user->is_user_customer == 1) {
             $userCounterLimit = $user->counter_limit ?? 0;
             $usageCount = 0;
-            switch ($model) {
-                case 'Document': $usageCount = Document::where('user_id', $user->id)->count(); break;
-                case 'ContractSolutions': $usageCount = ContractSolutions::where('user_id', $user->id)->count(); break;
-                case 'DataProcess': $usageCount = DataProcess::where('user_id', $user->id)->count(); break;
-                case 'FreeDataProcess': $usageCount = FreeDataProcess::where('user_id', $user->id)->count(); break;
-                case 'CloneDataProcess': $usageCount = CloneDataProcess::where('user_id', $user->id)->count(); break;
-                case 'Werthenbach': $usageCount = Werthenbach::where('user_id', $user->id)->count(); break;
-                case 'Scheren': $usageCount = Scheren::where('user_id', $user->id)->count(); break;
-                case 'Sennheiser': $usageCount = Sennheiser::where('user_id', $user->id)->count(); break;
-                case 'Verbund': $usageCount = Verbund::where('user_id', $user->id)->count(); break;
-                case 'Surfachem': $usageCount = Surfachem::where('user_id', $user->id)->count(); break;
-                case 'DemoDataProcess': $usageCount = DemoDataProcess::where('user_id', $user->id)->count(); break;
-                default: $usageCount = 0;
-            }
+            $usageCount = max(0, $this->countUsageForModel((string) $model, [$user->id]));
             $availableCount = max(0, $userCounterLimit - $usageCount);
             return response()->json([
                 'status' => 'success',
@@ -65,173 +110,32 @@ class UsageController extends Controller
             ], 200);
         }
 
-        // yaha sy shru kro
-        if ($user->user_register_type == "out") {
+        // For organizational users and their regular users, usage/limit is shared (org + all child users combined)
+        $scope = $this->resolveCounterScopeForUser($user);
+        $userCounterLimit = (int) ($scope['counter_limit'] ?? 0);
+        $scopeUserIds = $scope['user_ids'] ?? [$user->id];
 
-            switch ($model) {
-                case 'Document':
-                    $usageCount = Document::where('user_id', $user->id)->count();
-                    break;
-
-                case 'ContractSolutions':
-                    $usageCount = ContractSolutions::where('user_id', $user->id)->count();
-                    break;
-
-                case 'DataProcess':
-                    $usageCount = DataProcess::where('user_id', $user->id)->count();
-                    break;
-
-                case 'FreeDataProcess':
-                    $usageCount = FreeDataProcess::where('user_id', $user->id)->count();
-                    break;
-
-                case 'CloneDataProcess':
-                    $usageCount = CloneDataProcess::where('user_id', $user->id)->count();
-                    break;
-                case 'Werthenbach':
-                    $usageCount = Werthenbach::where('user_id', $user->id)->count();
-                    break;
-                case 'Scheren':
-                    $usageCount = Scheren::where('user_id', $user->id)->count();
-                    break;
-                case 'Sennheiser':
-                    $usageCount = Sennheiser::where('user_id', $user->id)->count();
-                    break;
-                case 'Verbund':
-                    $usageCount = Verbund::where('user_id', $user->id)->count();
-                    break;
-                case 'Surfachem':
-                    $usageCount = Surfachem::where('user_id', $user->id)->count();
-                    break;
-                case 'DemoDataProcess':
-                    $usageCount = DemoDataProcess::where('user_id', $user->id)->count();
-                    break;
-                default:
-                    return response()->json(['status' => 'error', 'message' => 'Invalid model specified'], 400);
-            }
-
-            // Calculate the remaining available count (usage count left)
-            $userCounterLimit = $user->counter_limit ?? 0;
-
-            $availableCount = max(0, $userCounterLimit - $usageCount);
-            // If the usage count exceeds the user's counter limit, return an error
-            if ($usageCount >= $userCounterLimit) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Usage limit exceeded',
-                    'userCounterLimit' => $userCounterLimit,
-                    'available_count' => $availableCount,
-                ], 403);
-            }
-
-            return response()->json([
-                'status' => 'success',
-                'message' => 'Applicable',
-                'userCounterLimit' => $userCounterLimit,
-                'available_count' => $availableCount, // Return available count
-            ], 200);
-        } else {
-            // Get the organizational IDs associated with the authenticated user
-            $organizationalUserId = OrganizationalUser::where('user_id', Auth::user()->id)
-                ->first();
-
-            if (!$organizationalUserId) {
-                $organizationalUserId = OrganizationalUser::where('organizational_id', Auth::user()->id)
-                    ->first();
-            }
-            if ($organizationalUserId === null) {
-                return response()->json(['status' => 'error', 'message' => 'Organizational user data is missing'], 400);
-            }
-
-            // Use the customer's counter_limit (contract limit); fallback to main org user or current user if customer limit is 0/null
-            $customer = User::find($organizationalUserId->customer_id);
-            $customerLimit = $customer ? ($customer->counter_limit ?? 0) : 0;
-            $mainOrgUser = User::find($organizationalUserId->user_id);
-            $mainOrgLimit = $mainOrgUser ? ($mainOrgUser->counter_limit ?? 0) : 0;
-            $userCounterLimit = $customerLimit > 0 ? $customerLimit : ($mainOrgLimit > 0 ? $mainOrgLimit : ($user->counter_limit ?? 0));
-
-            $organizationalUserIds = OrganizationalUser::where('user_id', $organizationalUserId->user_id)
-                ->whereNotNull('organizational_id')
-                ->pluck('organizational_id')->toArray(); // Returns an array of organizational IDs
-
-            // Include the organizational user's own ID to count their usage as well
-            $allUserIds = array_merge($organizationalUserIds, [$organizationalUserId->user_id]);
-
-            if (empty($allUserIds)) {
-                // If there are no valid organizational IDs, return a specific message
-                return response()->json(['status' => 'error', 'message' => 'No valid organizational data found'], 400);
-            }
-
-            // Dynamically determine the usage count based on the model
-            switch ($model) {
-                case 'Document':
-                    $usageCount = Document::whereIn('user_id', $allUserIds)->count();
-                    break;
-
-                case 'ContractSolutions':
-                    $usageCount = ContractSolutions::whereIn('user_id', $allUserIds)->count();
-                    break;
-
-                case 'DataProcess':
-                    $usageCount = DataProcess::whereIn('user_id', $allUserIds)->count();
-                    break;
-
-                case 'FreeDataProcess':
-                    $usageCount = FreeDataProcess::whereIn('user_id', $allUserIds)->count();
-                    break;
-
-                case 'CloneDataProcess':
-                    $usageCount = CloneDataProcess::whereIn('user_id', $allUserIds)->count();
-                    break;
-
-                case 'Werthenbach':
-                    $usageCount = Werthenbach::whereIn('user_id', $allUserIds)->count();
-                    break;
-
-                case 'Scheren':
-                    $usageCount = Scheren::whereIn('user_id', $allUserIds)->count();
-                    break;
-
-                case 'Sennheiser':
-                    $usageCount = Sennheiser::whereIn('user_id', $allUserIds)->count();
-                    break;
-
-                case 'Verbund':
-                    $usageCount = Verbund::whereIn('user_id', $allUserIds)->count();
-                    break;
-
-                case 'Surfachem':
-                    $usageCount = Surfachem::whereIn('user_id', $allUserIds)->count();
-                    break;
-
-                case 'DemoDataProcess':
-                    $usageCount = DemoDataProcess::whereIn('user_id', $allUserIds)->count();
-                    break;
-
-                default:
-                    return response()->json(['status' => 'error', 'message' => 'Invalid model specified'], 400);
-            }
-
-            // Calculate the remaining available count (usage count left)
-            $availableCount = max(0, $userCounterLimit - $usageCount);
-
-            // If the usage count exceeds the user's counter limit, return an error
-            if ($usageCount >= $userCounterLimit) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Usage limit exceeded',
-                    'userCounterLimit' => $userCounterLimit,
-                    'available_count' => $availableCount,
-                ], 403);
-            }
-
-            return response()->json([
-                'status' => 'success',
-                'message' => 'Applicable',
-                'userCounterLimit' => $userCounterLimit,
-                'available_count' => $availableCount, // Return available count
-            ], 200);
+        $usageCount = $this->countUsageForModel((string) $model, $scopeUserIds);
+        if ($usageCount < 0) {
+            return response()->json(['status' => 'error', 'message' => 'Invalid model specified'], 400);
         }
+
+        $availableCount = max(0, $userCounterLimit - $usageCount);
+        if ($userCounterLimit > 0 && $usageCount >= $userCounterLimit) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Usage limit exceeded',
+                'userCounterLimit' => $userCounterLimit,
+                'available_count' => $availableCount,
+            ], 403);
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Applicable',
+            'userCounterLimit' => $userCounterLimit,
+            'available_count' => $availableCount,
+        ], 200);
     }
 
     public function getServiceAvailability(Request $request)
@@ -242,7 +146,10 @@ class UsageController extends Controller
             return response()->json(['status' => 'error', 'message' => 'Unauthorized'], 401);
         }
 
-        $userCounterLimit = $user->counter_limit ?? 0;
+        // For organizational users and their regular users, availability is shared across the org group
+        $scope = $this->resolveCounterScopeForUser($user);
+        $scopeUserIds = $scope['user_ids'] ?? [$user->id];
+        $userCounterLimit = (int) ($scope['counter_limit'] ?? ($user->counter_limit ?? 0));
 
         $services = [
             'Document' => Document::class,
@@ -261,7 +168,7 @@ class UsageController extends Controller
         $availability = [];
 
         foreach ($services as $serviceName => $model) {
-            $usageCount = $model::where('user_id', $user->id)->count();
+            $usageCount = $model::whereIn('user_id', $scopeUserIds)->count();
             $availableCount = max(0, $userCounterLimit - $usageCount);
             $availability[$serviceName] = $availableCount;
         }
