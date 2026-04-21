@@ -194,32 +194,31 @@ class CustomerUserController extends Controller
         $user->expiration_date = $request->expirationDate;
         $userData = $user->save();
         if ($request->counterLimit || $request->expirationDate) {
-            $orgUsers = OrganizationalUser::where('user_id', $id)->get();
+            // Different creation flows store links differently in `organizational_users`.
+            // Collect all possible related user IDs and update them when present.
+            $linkedFromCustomer = OrganizationalUser::where('customer_id', $id)->pluck('user_id');
+            $linkedFromUser = OrganizationalUser::where('user_id', $id)->pluck('organizational_id');
+            $linkedFromOrganizational = OrganizationalUser::where('organizational_id', $id)->pluck('user_id');
 
-            // Check if organizational users exist
-            if ($orgUsers->isEmpty()) {
-                return response()->json(['message' => 'No organizational users found for the given user ID'], 404);
-            }
+            $relatedUserIds = $linkedFromCustomer
+                ->merge($linkedFromUser)
+                ->merge($linkedFromOrganizational)
+                ->filter()
+                ->unique()
+                ->values();
 
-            // Extract organizational IDs
-            $organizationalIds = $orgUsers->pluck('organizational_id')->filter();
-
-            if ($organizationalIds->isEmpty()) {
-                return response()->json(['message' => 'No valid organizational IDs found'], 404);
-            }
-
-            // Fetch related users from the users table
-            $users = User::whereIn('id', $organizationalIds)->get();
-
-            // Update counter_limit and expiration_date
-            foreach ($users as $user) {
+            if ($relatedUserIds->isNotEmpty()) {
+                $relatedUserUpdates = [];
                 if ($request->has('counterLimit')) {
-                    $user->counter_limit = $request->counterLimit;
+                    $relatedUserUpdates['counter_limit'] = $request->counterLimit;
                 }
                 if ($request->has('expirationDate')) {
-                    $user->expiration_date = $request->expirationDate;
+                    $relatedUserUpdates['expiration_date'] = $request->expirationDate;
                 }
-                $user->save();
+
+                if (!empty($relatedUserUpdates)) {
+                    User::whereIn('id', $relatedUserIds)->update($relatedUserUpdates);
+                }
             }
         }
 
