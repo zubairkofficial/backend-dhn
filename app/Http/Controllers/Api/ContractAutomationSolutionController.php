@@ -4,13 +4,13 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
 use Illuminate\Support\Facades\Log;
 use PhpOffice\PhpWord\PhpWord;
 use PhpOffice\PhpWord\IOFactory;
 use App\Models\ContractSolutions;
 use App\Services\CalculateUsage;
+use App\Services\ExternalProcessingClient;
 use App\Services\SendNotifyMail;
 use Illuminate\Support\Facades\Auth;
 
@@ -43,46 +43,19 @@ class ContractAutomationSolutionController extends Controller
         $fileName = $file->getClientOriginalName();
         $userId = $request->input('user_id');
 
-        // API URL
-        $url = 'http://20.218.155.138/contract_automation';
-
-        // Static credentials
-        $username = 'api_user';
-        $password = 'g*f>G31B=9D7';
-
-        // Create a Guzzle client with increased timeout
-        $client = new Client([
-            'timeout' => 600,
-            'connect_timeout' => 60,
-            'read_timeout' => 600,  // Add explicit read timeout
-            'http_errors' => false, // Handle errors manually
-       ]);
+        /** @var ExternalProcessingClient $processing */
+        $processing = app(ExternalProcessingClient::class);
 
         try {
             $startTime = microtime(true);
 
-            $response = $client->post($url, [
-                'auth' => [$username, $password],
-                'multipart' => [
-                    [
-                        'name'     => 'username',
-                        'contents' => $username,
-                    ],
-                    [
-                        'name'     => 'password',
-                        'contents' => $password,
-                    ],
-                    [
-                        'name'     => 'doctype',
-                        'contents' => $doctype,
-                    ],
-                    [
-                        'name'     => 'document',
-                        'contents' => fopen($file->getPathname(), 'r'),
-                        'filename' => $fileName,
-                    ],
-                ],
-            ]);
+            $response = $processing->postMultipart(
+                'contract_automation',
+                $file->getRealPath(),
+                $fileName,
+                ['doctype' => $doctype],
+                ['user_id' => $userId]
+            );
 
             $endTime = microtime(true);
 

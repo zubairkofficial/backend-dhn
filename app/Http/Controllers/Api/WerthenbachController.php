@@ -6,9 +6,8 @@ use App\Models\OrganizationalUser;
 use App\Models\User;
 use App\Models\Werthenbach;
 use App\Services\CalculateUsage;
+use App\Services\ExternalProcessingClient;
 use App\Services\SendNotifyMail;
-use GuzzleHttp\Client;
-use GuzzleHttp\Exception\RequestException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\File;
@@ -41,78 +40,57 @@ class WerthenbachController extends Controller
             return response()->json(['error' => 'Unauthenticated.'], 401);
         }
 
-        $userId    = $user->id;
+        $userId = $user->id;
         $responses = [];
+        /** @var ExternalProcessingClient $client */
+        $client = app(ExternalProcessingClient::class);
 
         foreach ($request->file('documents') as $file) {
             $fileName = $file->getClientOriginalName();
-            $url      = 'http://20.218.155.138/datasheet/werthenback';
-
-            $username = 'api_user';
-            $password = 'g*f>G31B=9D7';
-
-            $client = new Client([
-                'timeout'         => 600,
-                'connect_timeout' => 60,
-                'read_timeout'    => 600,   // Add explicit read timeout
-                'http_errors'     => false, // Handle errors manually
-            ]);
 
             try {
-                // Make the POST request with Basic Auth and multipart/form-data
-                $response = $client->post($url, [
-                    'auth'      => [$username, $password],
-                    'multipart' => [
-                        [
-                            'name'     => 'username',
-                            'contents' => $username,
-                        ],
-                        [
-                            'name'     => 'password',
-                            'contents' => $password,
-                        ],
-                        [
-                            'name'     => 'document',
-                            'contents' => fopen($file->getPathname(), 'r'),
-                            'filename' => $fileName,
-                        ],
-                    ],
-                ]);
+                $response = $client->postMultipart(
+                    'werthenbach',
+                    $file->getRealPath(),
+                    $fileName,
+                    [],
+                    ['user_id' => $userId]
+                );
 
-                // Check the status code for success
                 if ($response->getStatusCode() >= 200 && $response->getStatusCode() < 300) {
-                    // Get the response body
                     $responseData = json_decode($response->getBody(), true);
 
                     Werthenbach::create([
                         'file_name' => $fileName,
-                        'data'      => base64_encode(json_encode($responseData)),
-                        'user_id'   => $userId,
-                        'status'    => 'success',
+                        'data' => base64_encode(json_encode($responseData)),
+                        'user_id' => $userId,
+                        'status' => 'success',
                     ]);
 
                     $responses[] = $responseData;
                 } else {
-                    $errorMessage = 'Unexpected status code: ' . $response->getStatusCode();
+                    $errorMessage = 'Unexpected status code: '.$response->getStatusCode();
                     Werthenbach::create([
-                        'file_name'     => $fileName,
-                        'data'          => base64_encode(json_encode([])),
-                        'user_id'       => $userId,
-                        'status'        => 'error',
+                        'file_name' => $fileName,
+                        'data' => base64_encode(json_encode([])),
+                        'user_id' => $userId,
+                        'status' => 'error',
                         'error_message' => $errorMessage,
                     ]);
+
                     return response()->json(['message' => 'Failed to upload file', 'error' => $errorMessage], $response->getStatusCode());
                 }
-            } catch (RequestException $e) {
-                // Handle the error response
-                $errorResponse = $e->hasResponse() ? $e->getResponse()->getBody()->getContents() : $e->getMessage();
+            } catch (\Throwable $e) {
+                $errorResponse = $e->getMessage();
+                if ($e instanceof \GuzzleHttp\Exception\RequestException && $e->hasResponse()) {
+                    $errorResponse = $e->getResponse()->getBody()->getContents();
+                }
 
-                // Save error record
                 Werthenbach::create([
-                    'file_name'     => $fileName,
-                    'data'          => base64_encode(json_encode([])),
-                    'user_id'       => $userId,
-                    'status'        => 'error',
+                    'file_name' => $fileName,
+                    'data' => base64_encode(json_encode([])),
+                    'user_id' => $userId,
+                    'status' => 'error',
                     'error_message' => $errorResponse,
                 ]);
 

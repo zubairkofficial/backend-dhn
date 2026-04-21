@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\FileController;
 use App\Http\Controllers\Api\InstructionController;
 use App\Http\Controllers\Api\InvoiceController;
 use App\Http\Controllers\Api\OrganizationController;
+use App\Http\Controllers\Api\ProcessingBatchController;
 use App\Http\Controllers\Api\ScherenController;
 use App\Http\Controllers\Api\SennheiserController;
 use App\Http\Controllers\Api\ServiceController;
@@ -51,6 +52,8 @@ Route::get('get-trans', [TranslationController::class, 'allTrans']);
 Route::post('/process-pdf', [InvoiceController::class, 'processPdf']);
 
 Route::group(['middleware' => 'auth:sanctum'], function () {
+
+    Route::get('/processing/batch/{batchId}', [ProcessingBatchController::class, 'show']);
 
     Route::post('change-password', [AuthController::class, 'changePassword']);
     Route::get('getuser/{id}', [AuthController::class, 'getuser']);

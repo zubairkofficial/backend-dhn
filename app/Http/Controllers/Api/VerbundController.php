@@ -4,11 +4,10 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Services\CalculateUsage;
-use App\Services\SendNotifyMail;
-use GuzzleHttp\Client;
-use GuzzleHttp\Exception\RequestException;
 use App\Models\Verbund;
+use App\Services\CalculateUsage;
+use App\Services\ExternalProcessingClient;
+use App\Services\SendNotifyMail;
 use App\Models\OrganizationalUser;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
@@ -36,40 +35,20 @@ class VerbundController extends Controller
 
         $userId = $request->input('user_id');
         $responses = [];
+        /** @var ExternalProcessingClient $client */
+        $client = app(ExternalProcessingClient::class);
 
         foreach ($request->file('documents') as $file) {
             $fileName = $file->getClientOriginalName();
-            $url = 'http://20.218.155.138/datasheet/verbund';
-
-            $username = 'api_user';
-            $password = 'g*f>G31B=9D7';
-
-            $client = new Client([
-                'timeout' => 600,
-                'connect_timeout' => 60,
-                'read_timeout' => 600,  // 10 min for SDB2Excel Verbund (can take ~2 min, 5 min safe)
-                'http_errors' => false, // Handle errors manually
-            ]);
 
             try {
-                $response = $client->post($url, [
-                    'auth' => [$username, $password],
-                    'multipart' => [
-                        [
-                            'name'     => 'username',
-                            'contents' => $username,
-                        ],
-                        [
-                            'name'     => 'password',
-                            'contents' => $password,
-                        ],
-                        [
-                            'name'     => 'document',
-                            'contents' => fopen($file->getPathname(), 'r'),
-                            'filename' => $fileName
-                        ],
-                    ],
-                ]);
+                $response = $client->postMultipart(
+                    'verbund',
+                    $file->getRealPath(),
+                    $fileName,
+                    [],
+                    ['user_id' => $userId]
+                );
 
                 if ($response->getStatusCode() >= 200 && $response->getStatusCode() < 300) {
                     $responseData = json_decode($response->getBody(), true);
@@ -80,12 +59,16 @@ class VerbundController extends Controller
                         'user_id' => $userId,
                     ]);
 
-                    $responses[] =  $responseData;
+                    $responses[] = $responseData;
                 } else {
                     return response()->json(['message' => 'Failed to upload file', 'error' => 'Unexpected status code'], $response->getStatusCode());
                 }
-            } catch (RequestException $e) {
-                $errorResponse = $e->hasResponse() ? $e->getResponse()->getBody()->getContents() : $e->getMessage();
+            } catch (\Throwable $e) {
+                $errorResponse = $e->getMessage();
+                if ($e instanceof \GuzzleHttp\Exception\RequestException && $e->hasResponse()) {
+                    $errorResponse = $e->getResponse()->getBody()->getContents();
+                }
+
                 return response()->json(['message' => 'Failed to upload file', 'error' => $errorResponse], $e->getCode() ?: 400);
             }
         }

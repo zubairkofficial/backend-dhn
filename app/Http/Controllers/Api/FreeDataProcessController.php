@@ -3,13 +3,14 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\ProcessDatasheetMultipartJob;
 use App\Models\FreeDataProcess;
 use App\Services\CalculateUsage;
+use App\Services\ExternalProcessingClient;
 use App\Services\SendNotifyMail;
 use Illuminate\Http\Request;
-use GuzzleHttp\Client;
-use GuzzleHttp\Exception\RequestException;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Bus;
 
 class FreeDataProcessController extends Controller
 {
@@ -34,61 +35,63 @@ class FreeDataProcessController extends Controller
         $sendNofication->sendMailIfFirstTimeAt90($user, $details, $status);
 
         $userId = $request->input('user_id');
+
+        if (config('processing.use_queue')) {
+            $jobs = [];
+            foreach ($request->file('documents') as $file) {
+                $storedPath = $file->store('temp-processing', 'local');
+                $jobs[] = new ProcessDatasheetMultipartJob(
+                    'free_datasheet_process',
+                    $storedPath,
+                    $file->getClientOriginalName(),
+                    (int) $userId,
+                    FreeDataProcess::class,
+                );
+            }
+            $batch = Bus::batch($jobs)->name('free_datasheet_process')->dispatch();
+
+            return response()->json([
+                'message' => 'Processing queued',
+                'batch_id' => $batch->id,
+            ], 202);
+        }
+
         $responses = [];
+        /** @var ExternalProcessingClient $client */
+        $client = app(ExternalProcessingClient::class);
 
         foreach ($request->file('documents') as $file) {
             $fileName = $file->getClientOriginalName();
-            $url = 'http://20.218.155.138/free_datasheet_process';
-
-            $username = 'api_user';
-            $password = 'g*f>G31B=9D7';
-
-            $client = new Client([
-                'timeout' => 600,
-                'connect_timeout' => 60,
-                'read_timeout' => 600,  // Add explicit read timeout
-                'http_errors' => false, // Handle errors manually
-            ]);
 
             try {
-                // Make the POST request with Basic Auth and multipart/form-data
-                $response = $client->post($url, [
-                    'auth' => [$username, $password],
-                    'multipart' => [
-                        [
-                            'name'     => 'username',
-                            'contents' => $username,
-                        ],
-                        [
-                            'name'     => 'password',
-                            'contents' => $password,
-                        ],
-                        [
-                            'name'     => 'document',
-                            'contents' => fopen($file->getPathname(), 'r'),
-                            'filename' => $fileName
-                        ],
-                    ],
-                ]);
+                $response = $client->postMultipart(
+                    'free_datasheet_process',
+                    $file->getRealPath(),
+                    $fileName,
+                    [],
+                    ['user_id' => $userId]
+                );
 
-                // Check the status code for success
                 if ($response->getStatusCode() >= 200 && $response->getStatusCode() < 300) {
-                    // Get the response body
                     $responseData = json_decode($response->getBody(), true);
 
                     FreeDataProcess::create([
                         'file_name' => $fileName,
                         'data' => base64_encode(json_encode($responseData)),
-                        'user_id'=> $userId,
+                        'user_id' => $userId,
+                        'status' => 'success',
                     ]);
 
-                    $responses[] =  $responseData;
+                    $responses[] = $responseData;
                 } else {
                     return response()->json(['message' => 'Failed to upload file', 'error' => 'Unexpected status code'], $response->getStatusCode());
                 }
-            } catch (RequestException $e) {
-                // Handle the error response
-                $errorResponse = $e->hasResponse() ? $e->getResponse()->getBody()->getContents() : $e->getMessage();
+            } catch (\Throwable $e) {
+                $errorResponse = $e->getMessage();
+                if ($e instanceof \GuzzleHttp\Exception\RequestException && $e->hasResponse()) {
+                    $errorResponse = $e->getResponse()->getBody()->getContents();
+                }
+
                 return response()->json(['message' => 'Failed to upload file', 'error' => $errorResponse], $e->getCode() ?: 400);
             }
         }

@@ -3,13 +3,21 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use App\Models\Translation;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class TranslationController extends Controller
 {
-    public function allTrans(){
-        return response()->json(Translation::all());
+    public const TRANSLATIONS_CACHE_KEY = 'translations.all';
+
+    public function allTrans()
+    {
+        $data = Cache::remember(self::TRANSLATIONS_CACHE_KEY, 3600, function () {
+            return Translation::all()->values()->all();
+        });
+
+        return response()->json($data);
     }
 
     public function addTrans(Request $request){
@@ -22,7 +30,9 @@ class TranslationController extends Controller
         $trans->key=$request->key;
         $trans->value=$request->value;
         $trans->save();
-        
+
+        Cache::forget(self::TRANSLATIONS_CACHE_KEY);
+
         return response()->json([
             "message" => "Translation Save Successfully",
             "org" => $trans,
@@ -44,6 +54,8 @@ class TranslationController extends Controller
         $trans->key=$request->key;
         $trans->value=$request->value;
         $trans->save();
+
+        Cache::forget(self::TRANSLATIONS_CACHE_KEY);
 
         return response()->json(['message' => 'Translation updated successfully', $trans]);
     }

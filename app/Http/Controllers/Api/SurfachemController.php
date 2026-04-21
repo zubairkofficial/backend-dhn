@@ -5,9 +5,8 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use GuzzleHttp\Client;
-use GuzzleHttp\Exception\RequestException;
 use App\Models\Surfachem;
+use App\Services\ExternalProcessingClient;
 use App\Models\OrganizationalUser;
 use App\Models\User;
 use App\Services\CalculateUsage;
@@ -36,40 +35,20 @@ class SurfachemController extends Controller
 
         $userId = $request->input('user_id');
         $responses = [];
+        /** @var ExternalProcessingClient $client */
+        $client = app(ExternalProcessingClient::class);
 
         foreach ($request->file('documents') as $file) {
             $fileName = $file->getClientOriginalName();
-            $url = 'http://20.218.155.138/datasheet/surfachem';
-
-            $username = 'api_user';
-            $password = 'g*f>G31B=9D7';
-
-            $client = new Client([
-                'timeout' => 600,
-                'connect_timeout' => 60,
-                'read_timeout' => 600,
-                'http_errors' => false,
-            ]);
 
             try {
-                $response = $client->post($url, [
-                    'auth' => [$username, $password],
-                    'multipart' => [
-                        [
-                            'name'     => 'username',
-                            'contents' => $username,
-                        ],
-                        [
-                            'name'     => 'password',
-                            'contents' => $password,
-                        ],
-                        [
-                            'name'     => 'document',
-                            'contents' => fopen($file->getPathname(), 'r'),
-                            'filename' => $fileName
-                        ],
-                    ],
-                ]);
+                $response = $client->postMultipart(
+                    'surfachem',
+                    $file->getRealPath(),
+                    $fileName,
+                    [],
+                    ['user_id' => $userId]
+                );
 
                 if ($response->getStatusCode() >= 200 && $response->getStatusCode() < 300) {
                     $responseData = json_decode($response->getBody(), true);
@@ -83,23 +62,26 @@ class SurfachemController extends Controller
 
                     $responses[] = $responseData;
                 } else {
-                    $errorMessage = 'Unexpected status code: ' . $response->getStatusCode();
+                    $errorMessage = 'Unexpected status code: '.$response->getStatusCode();
                     Surfachem::create([
-                        'file_name'     => $fileName,
-                        'data'          => null,
-                        'user_id'       => $userId,
-                        'status'        => 'error',
+                        'file_name' => $fileName,
+                        'data' => null,
+                        'user_id' => $userId,
+                        'status' => 'error',
                         'error_message' => $errorMessage,
                     ]);
                     $responses[] = ['error' => $errorMessage, 'file_name' => $fileName];
                 }
-            } catch (RequestException $e) {
-                $errorResponse = $e->hasResponse() ? $e->getResponse()->getBody()->getContents() : $e->getMessage();
+            } catch (\Throwable $e) {
+                $errorResponse = $e->getMessage();
+                if ($e instanceof \GuzzleHttp\Exception\RequestException && $e->hasResponse()) {
+                    $errorResponse = $e->getResponse()->getBody()->getContents();
+                }
                 Surfachem::create([
-                    'file_name'     => $fileName,
-                    'data'          => null,
-                    'user_id'       => $userId,
-                    'status'        => 'error',
+                    'file_name' => $fileName,
+                    'data' => null,
+                    'user_id' => $userId,
+                    'status' => 'error',
                     'error_message' => $errorResponse,
                 ]);
                 $responses[] = ['error' => $errorResponse, 'file_name' => $fileName];

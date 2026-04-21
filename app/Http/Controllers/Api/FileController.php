@@ -3,15 +3,14 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Services\ExternalProcessingClient;
 use Illuminate\Http\Request;
-use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
 use Illuminate\Support\Facades\Log;
 use App\Models\Document;
 use App\Services\CalculateUsage;
 use App\Services\SendNotifyMail;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 
 class FileController extends Controller
 {
@@ -37,36 +36,17 @@ class FileController extends Controller
         $user = Auth::user();
         $sendNofication = new SendNotifyMail();
         $sendNofication->sendMailIfFirstTimeAt90($user, $details, $status);
-        // API URL
-        $url = 'http://20.218.155.138/sthamer/datasheet_process';
-
-        // Static credentials
-        $username = 'api_user';
-        $password = 'g*f>G31B=9D7';
-
-        // Create a Guzzle client
-        $client = new Client();
+        /** @var ExternalProcessingClient $processing */
+        $processing = app(ExternalProcessingClient::class);
 
         try {
-            // Make the POST request with Basic Auth and multipart/form-data
-            $response = $client->post($url, [
-                'auth' => [$username, $password],
-                'multipart' => [
-                    [
-                        'name'     => 'username',
-                        'contents' => $username,
-                    ],
-                    [
-                        'name'     => 'password',
-                        'contents' => $password,
-                    ],
-                    [
-                        'name'     => 'document',
-                        'contents' => fopen($file->getPathname(), 'r'),
-                        'filename' => $fileName,
-                    ],
-                ],
-            ]);
+            $response = $processing->postMultipart(
+                'sthamer_datasheet_process',
+                $file->getRealPath(),
+                $fileName,
+                [],
+                ['user_id' => $userId]
+            );
 
             // Check the status code for success
             if ($response->getStatusCode() >= 200 && $response->getStatusCode() < 300) {
