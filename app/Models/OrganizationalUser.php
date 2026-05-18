@@ -4,8 +4,18 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 
+/**
+ * Pivot between customer admin, org admin, and member users. Domain tables (`documents`, `*_processes`, …)
+ * use `user_id` as `users.id` for whoever created the row — that is unrelated to column names here.
+ *
+ * - **user_id**: organizational (org-admin) user — the “owner” side of the org’s seat row (`users.id`).
+ * - **organizational_id**: when set, the member (normal) user belonging under that org admin (`users.id`).
+ * - **customer_id**: optional link to the customer-admin user who provisioned the org (`users.id`).
+ *
+ * Example: customer admin creates an org admin (row: user_id = org admin, customer_id = customer).
+ * Rows for each seat add organizational_id = member’s `users.id` with the same user_id = org admin.
+ */
 class OrganizationalUser extends Model
 {
     use HasFactory;

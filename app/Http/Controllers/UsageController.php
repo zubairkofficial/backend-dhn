@@ -10,8 +10,8 @@ use App\Models\ContractSolutions; // Assuming the model name is ContractSolution
 use App\Models\FreeDataProcess;
 use App\Models\DemoDataProcess;
 use App\Models\Werthenbach;
-use App\Models\OrganizationalUser;
 use App\Models\Scheren;
+use App\Services\UserUsageScopeResolver;
 use App\Models\Sennheiser;
 use App\Models\Surfachem;
 use App\Models\Verbund;
@@ -20,47 +20,6 @@ use Illuminate\Support\Facades\Auth;
 
 class UsageController extends Controller
 {
-    private function resolveCounterScopeForUser(User $user): array
-    {
-        // Default: standalone user (no org scope)
-        $scopeUserIds = [$user->id];
-        $counterLimit = (int) ($user->counter_limit ?? 0);
-
-        // Find org linkage either as org user (user_id) or as regular user (organizational_id)
-        $link = OrganizationalUser::where('user_id', $user->id)->first();
-        if (! $link) {
-            $link = OrganizationalUser::where('organizational_id', $user->id)->first();
-        }
-
-        if (! $link) {
-            return ['user_ids' => $scopeUserIds, 'counter_limit' => $counterLimit];
-        }
-
-        $orgUserId = (int) ($link->user_id ?? $user->id);
-
-        $childIds = OrganizationalUser::where('user_id', $orgUserId)
-            ->whereNotNull('organizational_id')
-            ->pluck('organizational_id')
-            ->map(fn ($id) => (int) $id)
-            ->toArray();
-
-        $scopeUserIds = array_values(array_unique(array_merge($childIds, [$orgUserId])));
-
-        // Prefer the organizational user's limit as the shared group limit
-        $orgUser = User::find($orgUserId);
-        if ($orgUser && (int) ($orgUser->counter_limit ?? 0) > 0) {
-            $counterLimit = (int) $orgUser->counter_limit;
-        }
-
-        // If customer has an explicit contract limit, it should also cap the org group
-        $customer = isset($link->customer_id) ? User::find($link->customer_id) : null;
-        if ($customer && (int) ($customer->counter_limit ?? 0) > 0) {
-            $counterLimit = (int) $customer->counter_limit;
-        }
-
-        return ['user_ids' => $scopeUserIds, 'counter_limit' => $counterLimit];
-    }
-
     private function countUsageForModel(string $model, array $userIds): int
     {
         return match ($model) {
@@ -111,7 +70,7 @@ class UsageController extends Controller
         }
 
         // For organizational users and their regular users, usage/limit is shared (org + all child users combined)
-        $scope = $this->resolveCounterScopeForUser($user);
+        $scope = UserUsageScopeResolver::resolve($user);
         $userCounterLimit = (int) ($scope['counter_limit'] ?? 0);
         $scopeUserIds = $scope['user_ids'] ?? [$user->id];
 
@@ -147,7 +106,7 @@ class UsageController extends Controller
         }
 
         // For organizational users and their regular users, availability is shared across the org group
-        $scope = $this->resolveCounterScopeForUser($user);
+        $scope = UserUsageScopeResolver::resolve($user);
         $scopeUserIds = $scope['user_ids'] ?? [$user->id];
         $userCounterLimit = (int) ($scope['counter_limit'] ?? ($user->counter_limit ?? 0));
 

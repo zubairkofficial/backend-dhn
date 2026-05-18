@@ -17,13 +17,17 @@ use App\Models\OrganizationalUser;
 
 abstract class Controller
 {
-    //
-    public function countToolDocument($organizationId)
+    /**
+     * Aggregate tool usage for an org admin and all member users linked via `organizational_users`.
+     *
+     * @param  int  $orgAdminUserId  `users.id` of the organizational (admin) user (`organizational_users.user_id`).
+     */
+    public function countToolDocument(int $orgAdminUserId)
     {
-        $normalUsers = OrganizationalUser::where('user_id', $organizationId)->pluck('organizational_id')->toArray();
-        
-        // Include the organizational user's own ID in the array to count their usage as well
-        $allUserIds = array_merge($normalUsers, [$organizationId]);
+        $normalUsers = OrganizationalUser::where('user_id', $orgAdminUserId)->pluck('organizational_id')->toArray();
+
+        // Include the org admin's own `users.id` so their rows are counted with the group.
+        $allUserIds = array_merge($normalUsers, [$orgAdminUserId]);
 
         $dataProcessCount = DataProcess::whereIn('user_id', $allUserIds)->count();
         $documentsCount = Document::whereIn('user_id', $allUserIds)->count();
@@ -55,23 +59,29 @@ abstract class Controller
         ];
 
     }
-    public function countToolDocumentNormalUser($organizationId)
+
+    /**
+     * Tool usage for a single member user (`organizational_users.organizational_id` → domain tables `user_id`).
+     *
+     * @param  int  $memberUserId  `users.id` of the normal (member) user.
+     */
+    public function countToolDocumentNormalUser(int $memberUserId)
     {
-        $normalUsers = OrganizationalUser::where('organizational_id', $organizationId)->pluck('organizational_id')->toArray();
-       // dd($normalUsers);
+        // Domain rows are keyed by the member's `users.id`; the old pivot query was redundant (filter + pluck same column).
+        $userIds = [$memberUserId];
 
-        $dataProcessCount = DataProcess::whereIn('user_id', $normalUsers)->count();
-        $documentsCount = Document::whereIn('user_id', $normalUsers)->count();
-        $contractSolutionCount = ContractSolutions::whereIn('user_id', $normalUsers)->count();
+        $dataProcessCount = DataProcess::whereIn('user_id', $userIds)->count();
+        $documentsCount = Document::whereIn('user_id', $userIds)->count();
+        $contractSolutionCount = ContractSolutions::whereIn('user_id', $userIds)->count();
 
-        $freeDataProcessCount = FreeDataProcess::whereIn('user_id', $normalUsers)->count();
-        $cloneDataProcessCount = CloneDataProcess::whereIn('user_id', $normalUsers)->count();
-        $werthenbachCount = Werthenbach::whereIn('user_id', $normalUsers)->count();
-        $scherenCount = Scheren::whereIn('user_id', $normalUsers)->count();
-        $sennheiserCount = Sennheiser::whereIn('user_id', $normalUsers)->count();
-        $verbundCount = Verbund::whereIn('user_id', $normalUsers)->count();
-        $surfachemCount = Surfachem::whereIn('user_id', $normalUsers)->count();
-        $demoDataProcessCount = DemoDataProcess::whereIn('user_id', $normalUsers)->count();
+        $freeDataProcessCount = FreeDataProcess::whereIn('user_id', $userIds)->count();
+        $cloneDataProcessCount = CloneDataProcess::whereIn('user_id', $userIds)->count();
+        $werthenbachCount = Werthenbach::whereIn('user_id', $userIds)->count();
+        $scherenCount = Scheren::whereIn('user_id', $userIds)->count();
+        $sennheiserCount = Sennheiser::whereIn('user_id', $userIds)->count();
+        $verbundCount = Verbund::whereIn('user_id', $userIds)->count();
+        $surfachemCount = Surfachem::whereIn('user_id', $userIds)->count();
+        $demoDataProcessCount = DemoDataProcess::whereIn('user_id', $userIds)->count();
         $allCount = $dataProcessCount + $documentsCount + $contractSolutionCount + $freeDataProcessCount + $cloneDataProcessCount + $werthenbachCount + $scherenCount + $sennheiserCount + $verbundCount + $surfachemCount + $demoDataProcessCount;
 
         return [

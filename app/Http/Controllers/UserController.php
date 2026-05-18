@@ -87,6 +87,8 @@ class UserController extends Controller
         // Create a token for the new user
         $token = $user->createToken('user_token')->plainTextToken;
 
+        Service::appendPresentationToUser($user);
+
         // Return the response
         return response()->json([
             "message" => "User registered successfully. Please verify your email to continue.",
@@ -245,6 +247,8 @@ class UserController extends Controller
 
         // Create a token for the new user
         $token = $user->createToken('user_token')->plainTextToken;
+
+        Service::appendPresentationToUser($user);
 
         // Return the response
         return response()->json([

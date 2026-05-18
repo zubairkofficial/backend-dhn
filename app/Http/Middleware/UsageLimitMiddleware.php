@@ -7,8 +7,8 @@ use App\Models\DataProcess;
 use App\Models\DemoDataProcess;
 use App\Models\Document;
 use App\Models\FreeDataProcess;
-use App\Models\OrganizationalUser;
-use App\Models\User;
+use App\Models\Surfachem;
+use App\Services\UserUsageScopeResolver;
 use App\Models\Scheren;
 use App\Models\Sennheiser;
 use App\Models\Verbund;
@@ -86,6 +86,10 @@ class UsageLimitMiddleware
                     $usageCount = Verbund::where('user_id', $user->id)->count();
                     break;
 
+                case 'Surfachem':
+                    $usageCount = Surfachem::where('user_id', $user->id)->count();
+                    break;
+
                 case 'DemoDataProcess':
                     $usageCount = DemoDataProcess::where('user_id', $user->id)->count();
                     break;
@@ -103,39 +107,11 @@ class UsageLimitMiddleware
             return $next($request);
         }
 
-        // Handle organizational users - count from organizational user IDs
-        // Get the organizational IDs associated with the authenticated user
-        $organizationalUserId = OrganizationalUser::where('user_id', Auth::user()->id)
-            ->first();
+        // Same counter scope as UsageController::getUsageCount / CalculateUsage (org + members or standalone).
+        $scope = UserUsageScopeResolver::resolve($user);
+        $allUserIds = $scope['user_ids'] ?? [$user->id];
+        $userCounterLimit = (int) ($scope['counter_limit'] ?? ($user->counter_limit ?? 0));
 
-        if (! $organizationalUserId) {
-            $organizationalUserId = OrganizationalUser::where('organizational_id', Auth::user()->id)
-                ->first();
-        }
-        if (! $organizationalUserId) {
-            return response()->json(['status' => 'error', 'message' => 'No valid organizational data found'], 400);
-        }
-
-        // Use the customer's counter_limit; fallback to main org user or current user if customer limit is 0/null
-        $customer = User::find($organizationalUserId->customer_id);
-        $customerLimit = $customer ? ($customer->counter_limit ?? 0) : 0;
-        $mainOrgUser = User::find($organizationalUserId->user_id);
-        $mainOrgLimit = $mainOrgUser ? ($mainOrgUser->counter_limit ?? 0) : 0;
-        $userCounterLimit = $customerLimit > 0 ? $customerLimit : ($mainOrgLimit > 0 ? $mainOrgLimit : ($user->counter_limit ?? 0));
-
-        $organizationalUserIds = OrganizationalUser::where('user_id', $organizationalUserId->user_id)
-            ->whereNotNull('organizational_id')
-            ->pluck('organizational_id')->toArray(); // Return an array of organizational_ids
-
-        // Include the organizational user's own ID to count their usage as well
-        $allUserIds = array_merge($organizationalUserIds, [$organizationalUserId->user_id]);
-
-        // If there are no valid organizational IDs, return an error message
-        if (empty($allUserIds)) {
-            return response()->json(['status' => 'error', 'message' => 'No valid organizational data found'], 400);
-        }
-
-        // Dynamically check usage for the specified model
         switch ($model) {
             case 'Document':
                 $usageCount = Document::whereIn('user_id', $allUserIds)->count();
@@ -171,6 +147,10 @@ class UsageLimitMiddleware
 
             case 'Verbund':
                 $usageCount = Verbund::whereIn('user_id', $allUserIds)->count();
+                break;
+
+            case 'Surfachem':
+                $usageCount = Surfachem::whereIn('user_id', $allUserIds)->count();
                 break;
 
             case 'DemoDataProcess':

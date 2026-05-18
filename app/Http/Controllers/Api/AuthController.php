@@ -74,6 +74,8 @@ class AuthController extends Controller
         }
         $token = $user->createToken('user_token')->plainTextToken;
 
+        Service::appendPresentationToUser($user);
+
         return response()->json([
             "message" => "You are registered successfully. Please verify your email to continue",
             "user"    => $user,
@@ -154,6 +156,9 @@ class AuthController extends Controller
 
         $email = new WelcomeEmail($user);
         Mail::to($user->email)->send($email);
+
+        Service::appendPresentationToUser($user);
+
         // Return a response with the user data and token
         return response()->json([
             "message" => "Customer registered successfully.",
@@ -231,6 +236,9 @@ class AuthController extends Controller
         $organizationalUser->user_id     = $organizationUser->id;
         $organizationalUser->save();
 
+        Service::appendPresentationToUser($customerUser);
+        Service::appendPresentationToUser($organizationUser);
+
         // Return a response with the customer data and token
         return response()->json([
             "message"           => "Customer and organization user registered successfully.",
@@ -287,6 +295,8 @@ class AuthController extends Controller
             ]);
         }
 
+        Service::appendPresentationToUser($user);
+
         return response()->json([
             "message" => "User Linked Successfully.",
             "user"    => $user,
@@ -307,6 +317,9 @@ class AuthController extends Controller
             // if (Auth::user()->hasVerifiedEmail()) {
             $user  = Auth::user();
             $token = $user->createToken('user_token')->plainTextToken;
+
+            Service::appendPresentationToUser($user);
+
             return response()->json([
                 "message"         => "Logged in successfully",
                 "user"            => $user,
@@ -330,6 +343,8 @@ class AuthController extends Controller
         if (Hash::check($request->input('old_password'), $user->password)) {
             $user->password = Hash::make($request->password);
             $user->save();
+
+            Service::appendPresentationToUser($user);
 
             return response()->json([
                 'message' => 'Password changed successfully',
@@ -372,11 +387,8 @@ class AuthController extends Controller
         }
 
         $orgs = Organization::all();
-        if ($user->services) {
-            $user->service_names = collect($user->services)->map(function ($serviceId) use ($services_ids) {
-                return $services_ids->get($serviceId)->name ?? '';
-            })->toArray();
-        }
+
+        Service::appendPresentationToUser($user);
 
         return response()->json(['user' => $user, 'services' => $services, 'orgs' => $orgs], 200);
     }
@@ -388,11 +400,8 @@ class AuthController extends Controller
 
         $services = Service::all();
         $orgs     = Organization::all();
-        if ($user->services) {
-            $user->service_names = collect($user->services)->map(function ($serviceId) use ($services_ids) {
-                return $services_ids->get($serviceId)->name ?? '';
-            })->toArray();
-        }
+
+        Service::appendPresentationToUser($user);
 
         return response()->json(['user' => $user, 'services' => $services, 'orgs' => $orgs], 200);
     }
@@ -470,6 +479,8 @@ class AuthController extends Controller
         // }
 
         // return response()->json(['message' => 'User and child organizational users updated successfully', 'user' => $user]);
+        Service::appendPresentationToUser($user);
+
         return response()->json(['message' => 'User updated successfully', 'user' => $user]);
     }
 
@@ -525,10 +536,14 @@ class AuthController extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
+        Service::appendPresentationToUser($user);
+
         return response()->json([
             'id'    => $user->id,
             'name'  => $user->name,
             'email' => $user->email,
+            'service_links' => $user->service_links ?? [],
+            'services' => $user->services ?? [],
         ]);
     }
 

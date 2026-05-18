@@ -4,8 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 
-use App\Models\User;
 use App\Models\Service;
+use App\Models\User;
 use App\Models\OrganizationalUser;
 use Illuminate\Support\Facades\Hash;
 // Import the Log facade
@@ -77,6 +77,8 @@ class CustomerUserController extends Controller
         // Create a token for the new user
         $token = $user->createToken('user_token')->plainTextToken;
 
+        Service::appendPresentationToUser($user);
+
         // Return the response
         return response()->json([
             "message" => "User registered successfully. Please verify your email to continue.",
@@ -147,6 +149,8 @@ class CustomerUserController extends Controller
 
         // Create a token for the new user
         $token = $user->createToken('user_token')->plainTextToken;
+
+        Service::appendPresentationToUser($user);
 
         // Return the response
         return response()->json([
